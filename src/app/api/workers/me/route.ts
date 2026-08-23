@@ -24,12 +24,29 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ worker });
 }
 
+const dayAvailabilitySchema = z.object({
+  enabled: z.boolean(),
+  start: z.string(),
+  end: z.string(),
+});
+
+const availabilitySchema = z.object({
+  monday: dayAvailabilitySchema,
+  tuesday: dayAvailabilitySchema,
+  wednesday: dayAvailabilitySchema,
+  thursday: dayAvailabilitySchema,
+  friday: dayAvailabilitySchema,
+  saturday: dayAvailabilitySchema,
+  sunday: dayAvailabilitySchema,
+});
+
 const updateSchema = z.object({
   primaryRole: z.enum(WORKER_ROLE_KEYS).optional(),
   yearsExperience: z.number().min(0).optional(),
   hourlyRate: z.number().positive().optional(),
   postcode: z.string().min(1).optional(),
   maxTravelDistanceMi: z.number().positive().optional(),
+  availability: availabilitySchema.optional(),
 });
 
 /** Update availability, rate, travel radius — spec §4. */

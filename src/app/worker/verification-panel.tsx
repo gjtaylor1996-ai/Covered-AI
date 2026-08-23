@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { WORKER_ROLE_LABELS, type WeeklyAvailability, type WorkerRoleKey } from "@/lib/types";
 
 interface WorkerProfileFull {
   id: string;
@@ -10,10 +10,21 @@ interface WorkerProfileFull {
   yearsExperience: number;
   hourlyRate: number;
   maxTravelDistanceMi: number;
+  availability: WeeklyAvailability;
   rightToWorkStatus: string;
   idVerificationStatus: string;
   dbsStatus: string;
 }
+
+const DAYS: (keyof WeeklyAvailability)[] = [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+];
 
 export function VerificationPanel() {
   const [profile, setProfile] = useState<WorkerProfileFull | null>(null);
@@ -26,6 +37,7 @@ export function VerificationPanel() {
   const [yearsExperience, setYearsExperience] = useState("0");
   const [hourlyRate, setHourlyRate] = useState("12");
   const [maxTravelDistanceMi, setMaxTravelDistanceMi] = useState("10");
+  const [availability, setAvailability] = useState<WeeklyAvailability | null>(null);
 
   const [idDob, setIdDob] = useState("");
   const [shareCode, setShareCode] = useState("");
@@ -43,6 +55,7 @@ export function VerificationPanel() {
     setYearsExperience(String(w.yearsExperience));
     setHourlyRate(String(w.hourlyRate));
     setMaxTravelDistanceMi(String(w.maxTravelDistanceMi));
+    setAvailability(w.availability);
   }
 
   useEffect(() => {
@@ -62,6 +75,7 @@ export function VerificationPanel() {
         yearsExperience: Number.parseFloat(yearsExperience) || 0,
         hourlyRate: Number.parseFloat(hourlyRate) || 0,
         maxTravelDistanceMi: Number.parseFloat(maxTravelDistanceMi) || 0,
+        availability,
       }),
     });
     setBusy(false);
@@ -170,6 +184,27 @@ export function VerificationPanel() {
             Max travel distance (mi)
             <input type="number" min="0" value={maxTravelDistanceMi} onChange={(e) => setMaxTravelDistanceMi(e.target.value)} style={{ display: "block", width: "100%" }} />
           </label>
+          {availability && (
+            <div>
+              Available on
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+                {DAYS.map((day) => (
+                  <label key={day} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                    <input
+                      type="checkbox"
+                      checked={availability[day].enabled}
+                      onChange={(e) =>
+                        setAvailability((a) =>
+                          a ? { ...a, [day]: { ...a[day], enabled: e.target.checked } } : a
+                        )
+                      }
+                    />
+                    {day.slice(0, 3)}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <button type="submit" disabled={busy}>Save profile</button>
         </form>
       </details>

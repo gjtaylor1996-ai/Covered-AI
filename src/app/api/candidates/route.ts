@@ -3,13 +3,16 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
 import { getBusinessRules } from "@/config/business-rules";
-import type { WorkerRoleKey } from "@/lib/types";
+import { computeMatchScore, KITCHEN_ROLES, KITCHEN_ROLE_GROUP } from "@/lib/matching";
+import type { WeeklyAvailability, WorkerRoleKey } from "@/lib/types";
 
 // Spec §4: role, maxDistance, minExperience, minReliability, sort.
 // maxDistance is a no-op until geocoding is built — it's not tied to
 // any specific phase in §8.1's table, and every worker is lat/lng-less
-// until it lands. minReliability/reliability-sort are real now that the
-// trust layer (Phase 2) is in.
+// until it lands. minReliability/reliability-sort/match-sort are real
+// now that the trust layer (Phase 2) is in. `role` also accepts the
+// prototype's "__kitchen__" group (covered.html's quick actions) and
+// `availability=weekend` matches its "Weekend cover" quick action.
 export async function GET(request: NextRequest) {
   const session = await getSessionFromRequest(request);
   if (!session) {
@@ -24,14 +27,22 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const role = searchParams.get("role") as WorkerRoleKey | null;
+  const role = searchParams.get("role");
   const minExperience = searchParams.get("minExperience");
   const minReliability = searchParams.get("minReliability");
-  const sort = searchParams.get("sort"); // "reliability" | "experience" (default)
+  const sort = searchParams.get("sort"); // "match" | "reliability" | "experience" (default)
+  const availability = searchParams.get("availability"); // "weekend"
+
+  const roleFilter =
+    role === KITCHEN_ROLE_GROUP
+      ? { primaryRole: { in: KITCHEN_ROLES } }
+      : role
+        ? { primaryRole: role as WorkerRoleKey }
+        : {};
 
   const workers = await db.workerProfile.findMany({
     where: {
-      ...(role ? { primaryRole: role } : {}),
+      ...roleFilter,
       ...(minExperience
         ? { yearsExperience: { gte: Number.parseFloat(minExperience) } }
         : {}),
@@ -55,11 +66,13 @@ export async function GET(request: NextRequest) {
         dbsStatus: "rejected",
         primaryRole: { in: getBusinessRules().verification.requiresDbsRoles },
       },
+      // Spec §3.3: accepting a hire request removes the worker from
+      // that venue's active casual search results — they're a direct
+      // employee there now — while leaving their profile intact for
+      // every other venue (this filter is venue-scoped, not global).
+      hireRequests: { none: { venueId: membership.venueId, status: "accepted" } },
     },
-    orderBy:
-      sort === "reliability"
-        ? { reliabilityScore: { sort: "desc", nulls: "last" } }
-        : { yearsExperience: "desc" },
+    orderBy: sort === "experience" ? { yearsExperience: "desc" } : undefined,
     select: {
       id: true,
       name: true,
@@ -68,13 +81,38 @@ export async function GET(request: NextRequest) {
       hourlyRate: true,
       postcode: true,
       maxTravelDistanceMi: true,
+      availability: true,
       // Score/tier only, never the raw shift log — data minimisation,
       // spec §7.
       reliabilityScore: true,
       reliabilityTier: true,
       shiftsCompleted: true,
+      favouritedBy: { where: { venueId: membership.venueId }, select: { id: true } },
     },
   });
 
-  return NextResponse.json({ candidates: workers });
+  const filtered =
+    availability === "weekend"
+      ? workers.filter((w) => {
+          const a = w.availability as unknown as WeeklyAvailability;
+          return a.saturday?.enabled || a.sunday?.enabled;
+        })
+      : workers;
+
+  const withMatchScore = filtered
+    .map((w) => {
+      const { availability: _availability, favouritedBy, ...rest } = w;
+      return {
+        ...rest,
+        isFavourite: favouritedBy.length > 0,
+        matchScore: computeMatchScore(w),
+      };
+    })
+    .sort((a, b) => {
+      if (sort === "reliability") return (b.reliabilityScore ?? -1) - (a.reliabilityScore ?? -1);
+      if (sort === "experience") return 0; // already ordered by the DB query
+      return b.matchScore - a.matchScore; // default: best match first
+    });
+
+  return NextResponse.json({ candidates: withMatchScore });
 }

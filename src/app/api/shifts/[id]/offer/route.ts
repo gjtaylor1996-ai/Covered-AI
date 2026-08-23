@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { expireIfPastDeadline } from "@/lib/shift-expiry";
-import { getShiftWindow, windowsOverlap } from "@/lib/shift-time";
+import { isWorkerDoubleBooked } from "@/lib/shift-time";
 
 const offerSchema = z.object({ workerId: z.string().uuid() });
 
@@ -54,18 +54,7 @@ export async function POST(
   // database-level exclusion constraint as a backstop against a race
   // between two concurrent offers; that needs a raw-SQL migration
   // (btree_gist EXCLUDE) not yet added here.
-  const thisWindow = getShiftWindow(shift);
-  const sameDayShifts = await db.shift.findMany({
-    where: {
-      workerId: worker.id,
-      status: { in: ["accepted", "confirmed"] },
-      date: shift.date,
-    },
-  });
-  const conflict = sameDayShifts.some((other) =>
-    windowsOverlap(thisWindow, getShiftWindow(other))
-  );
-  if (conflict) {
+  if (await isWorkerDoubleBooked(worker.id, shift)) {
     return NextResponse.json({ error: "worker_double_booked" }, { status: 409 });
   }
 

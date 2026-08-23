@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { FavouritesPanel } from "../favourites-panel";
 
 interface ShiftListItem {
   id: string;
@@ -109,9 +110,11 @@ export default function VenueShiftsPage() {
   return (
     <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
       <p>
-        <Link href="/">&larr; Home</Link>
+        <Link href="/">&larr; Home</Link> · <Link href="/venue/analytics">Analytics</Link>
       </p>
       <h1>Your shifts</h1>
+
+      <FavouritesPanel onBooked={loadShifts} />
 
       {trust && (
         <div style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>

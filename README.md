@@ -7,24 +7,26 @@ parent Downloads folder) for the full build brief and phasing rationale.
 This is a fresh codebase — `reference/prototypes/*.html` are the click-through
 UI/UX mockups that informed the design; they are not extended in place.
 
-## Status: Phase 5 — Disputes & admin tooling
+## Status: all six spec phases built
 
-Per spec §8.1, all six... no — five of six phases are built: Phase 0
-(foundations), Phase 1 (core booking loop), Phase 2 (Reliability Score /
-Venue Trust Score), Phase 3 (Stripe Connect payments), Phase 4
-(ID/right-to-work/DBS verification), and Phase 5 (dispute queue +
-admin panel). Only Phase 6 (permanent-hire flow, predictive demand, full
-analytics) remains. Phase 3 and Phase 4's Onfido piece are
-**code-complete but not live-tested** — both need a real external
-account only you can create (see "Stripe setup" / "Onfido setup" below).
-Everything else, including all of Phase 5, is **verified live** against
-the database in the browser: dispute creation with real automated
-triage (a shift with an actual charged Stripe payment classifies as
-"objective" with evidence attached; one without stays "subjective"),
-score exclusion while a dispute is pending, correct score effects after
-resolution either way, an admin correctly blocked from suspending an
-account below ops_manager, and login itself blocked once suspended. See
-`src/lib/scoring.ts` and `src/lib/venue-trust.ts` for interpretation
+Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop),
+Phase 2 (Reliability Score / Venue Trust Score), Phase 3 (Stripe Connect
+payments), Phase 4 (ID/right-to-work/DBS verification), Phase 5
+(dispute queue + admin panel), and Phase 6 (permanent-hire flow,
+analytics, demand forecast, quick actions) are all built. Phase 3 and
+Phase 4's Onfido piece are **code-complete but not live-tested** — both
+need a real external account only you can create (see "Stripe setup" /
+"Onfido setup" below, and `SETUP.md` for the consolidated list).
+Everything else — Phases 0, 1, 2, 5, and 6 in full — is **verified live**
+against the database in the browser, not just typechecked. Phase 6
+highlights: the permanent-hire flow was walked through end to end
+(propose → worker accepts → fee calculated correctly at £4,800 for a
+£24,000 salary and 2 completed shifts → worker confirmed excluded from
+that venue's search but still visible to a second venue, per spec
+§3.3); the prototype's exact three quick-action presets
+(`covered.html`'s `applyQuickAction`) were matched and verified,
+including weekend-availability filtering and kitchen-role grouping.
+See `src/lib/scoring.ts` and `src/lib/venue-trust.ts` for interpretation
 notes on two Phase 2 spec ambiguities (venue_confirmation_rate vs.
 attendance_rate_weighted sharing one underlying field, and the
 "late cancellation" tier vs. §3.1's binary 4-hour rule).
@@ -123,20 +125,50 @@ What's here:
   explicitly (open disputes, fill rate, GMV, verification backlog).
   Every admin action — verification override, dispute resolution,
   suspension — writes to `AdminAuditLog` (§8.2's "who, what, when, why").
+- **Depth features (Phase 6)** — spec §2.4/§3.3/§4. The permanent-hire
+  flow (`POST /api/hire-requests`, `POST /api/hire-requests/[id]/respond`)
+  computes the conversion fee server-side
+  (`calculateHireFee` in `src/config/business-rules.ts`) and the venue
+  UI always renders both the fee and the extended-hire alternative
+  together (never just the fee) — the UK Conduct of Employment Agencies
+  and Employment Businesses Regulations 2003 reg. 10 constraint from
+  CLAUDE.md. Accepting drops the worker from that specific venue's
+  `/api/candidates` results (a query-time filter, not a stored flag, so
+  there's nothing to keep in sync if a hire ever falls through) while
+  leaving them visible to every other venue, per spec §3.3. Match score
+  (`src/lib/matching.ts`) implements spec §2.2 honestly: the distance
+  term is neutral (not faked) since geocoding was never built. Quick
+  actions and the "book again" row match the prototype's actual
+  behaviour (`covered.html`'s `applyQuickAction` and `#book-again-row`)
+  rather than inventing new ones — "Need someone tonight" is
+  `minReliability=85` + match sort, "Weekend cover" filters on real
+  Saturday/Sunday availability (which needed `PATCH /workers/me` to
+  finally accept `availability`, spec §4, never wired up before this
+  phase), "Kitchen roles" expands to the prototype's exact five-role
+  group, and "book again" chains favourite → shift creation → offer
+  into the one tap the prototype's copy promises. Venue analytics
+  (`/api/venues/me/analytics`) and the demand forecast
+  (`/api/venues/me/demand-forecast`) are documented with the exact
+  definition used for each number the spec names but doesn't define
+  (fill rate, rate benchmark, the forecast's naive seasonal-average
+  method) rather than left implicit.
 - **CI** — `.github/workflows/ci.yml` runs typecheck/lint/build against a
   throwaway Postgres service container on every PR.
 
-What's explicitly *not* here yet: Phase 6 (permanent-hire flow,
-predictive demand, full analytics, quick actions) — everything else in
-the six-phase plan is built. Also still out of scope, flagged rather
-than silently skipped: the separate `Certification` model (food
-hygiene, personal licence, etc.) and its expiry sweep, which was never
-part of any single phase's named scope and is a large enough surface
-(submission, per-body verification, a daily expiry cron) to deserve its
-own pass; and known limitations noted inline in the suspend endpoint
-(an already-active session isn't revoked mid-session — stateless JWTs
-with no session store — only new logins are blocked). Don't build ahead
-without checking — see `../CLAUDE.md`.
+Everything in the spec's six-phase plan is now built. Still out of
+scope, flagged rather than silently skipped: the separate
+`Certification` model (food hygiene, personal licence, etc.) and its
+expiry sweep, which was never part of any single phase's named scope
+and is a large enough surface (submission, per-body verification, a
+daily expiry cron) to deserve its own pass; real geocoding (distance
+filtering and the match-score distance term are both no-ops without
+it); a real job queue (score/trust recalculation, dispute triage, and
+payment attempts all run inline in the request rather than as
+background jobs, per spec §6); and the known limitation noted inline in
+the suspend endpoint (an already-active session isn't revoked
+mid-session — stateless JWTs with no session store — only new logins
+are blocked). See `SETUP.md` for what you need to do to actually run
+and test all of this yourself.
 
 ## Admin-assisted verification (why, not just how)
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { VerificationPanel } from "../verification-panel";
+import { HireRequestsPanel } from "../hire-requests-panel";
 
 interface ShiftListItem {
   id: string;
@@ -172,6 +173,8 @@ export default function WorkerShiftsPage() {
         <Link href="/">&larr; Home</Link>
       </p>
       <h1>Your shifts</h1>
+
+      <HireRequestsPanel />
 
       <VerificationPanel />
 

@@ -36,7 +36,17 @@ interface Candidate {
   reliabilityScore: number | null;
   reliabilityTier: string;
   shiftsCompleted: number;
+  isFavourite: boolean;
+  matchScore: number;
 }
+
+// Quick actions from the prototype (covered.html, applyQuickAction) —
+// preset search filters, not a separate feature.
+const QUICK_ACTIONS: { key: string; label: string; params: Record<string, string> }[] = [
+  { key: "tonight", label: "⚡ Need someone tonight", params: { minReliability: "85", sort: "match" } },
+  { key: "weekend", label: "🗓 Weekend cover", params: { availability: "weekend", sort: "match" } },
+  { key: "kitchen", label: "🍳 Kitchen roles", params: { role: "__kitchen__", sort: "match" } },
+];
 
 export default function VenueShiftDetailPage() {
   const params = useParams<{ id: string }>();
@@ -52,6 +62,7 @@ export default function VenueShiftDetailPage() {
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeNote, setDisputeNote] = useState("");
   const [disputeSubmitted, setDisputeSubmitted] = useState(false);
+  const [quickAction, setQuickAction] = useState<string | null>(null);
 
   async function loadShift() {
     const res = await fetch(`/api/shifts/${params.id}`);
@@ -69,11 +80,24 @@ export default function VenueShiftDetailPage() {
 
   useEffect(() => {
     if (shift?.status !== "open") return;
-    fetch(`/api/candidates?role=${shift.role}`)
+    const action = QUICK_ACTIONS.find((a) => a.key === quickAction);
+    const params = new URLSearchParams({ role: shift.role, ...action?.params });
+    // A quick action's own role filter (e.g. kitchen roles) overrides
+    // this shift's specific role — matches the prototype, where quick
+    // actions replace the role filter rather than combine with it.
+    if (action?.params.role) params.set("role", action.params.role);
+    fetch(`/api/candidates?${params}`)
       .then((res) => res.json())
       .then((body) => setCandidates(body.candidates))
       .catch(() => setError("Could not load candidates."));
-  }, [shift?.status, shift?.role]);
+  }, [shift?.status, shift?.role, quickAction]);
+
+  async function toggleFavourite(workerId: string) {
+    await fetch(`/api/venues/me/favourites/${workerId}`, { method: "POST" });
+    setCandidates((cs) =>
+      cs ? cs.map((c) => (c.id === workerId ? { ...c, isFavourite: !c.isFavourite } : c)) : cs
+    );
+  }
 
   async function handleOffer(workerId: string) {
     setBusy(true);
@@ -205,10 +229,25 @@ export default function VenueShiftDetailPage() {
       {shift.status === "open" && (
         <section>
           <h2>Offer to a candidate</h2>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+            {QUICK_ACTIONS.map((a) => (
+              <button
+                key={a.key}
+                onClick={() => setQuickAction(quickAction === a.key ? null : a.key)}
+                style={{
+                  border: quickAction === a.key ? "2px solid #333" : "1px solid #ccc",
+                  borderRadius: 20,
+                  padding: "0.4rem 0.8rem",
+                }}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
           {candidates === null ? (
             <p>Loading candidates…</p>
           ) : candidates.length === 0 ? (
-            <p>No candidates found for this role yet.</p>
+            <p>No candidates found.</p>
           ) : (
             <ul style={{ listStyle: "none", padding: 0 }}>
               {candidates.map((c) => (
@@ -222,7 +261,14 @@ export default function VenueShiftDetailPage() {
                   }}
                 >
                   <span>
-                    {c.name} — {c.yearsExperience}y exp,{" "}
+                    <button
+                      onClick={() => toggleFavourite(c.id)}
+                      title="Favourite"
+                      style={{ border: "none", background: "none", cursor: "pointer" }}
+                    >
+                      {c.isFavourite ? "★" : "☆"}
+                    </button>{" "}
+                    {c.name} — match {c.matchScore}, {c.yearsExperience}y exp,{" "}
                     {c.reliabilityScore !== null
                       ? `${c.reliabilityScore} (${c.reliabilityTier})`
                       : c.reliabilityTier}

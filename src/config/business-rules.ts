@@ -91,3 +91,25 @@ export function getBusinessRules() {
 }
 
 export type BusinessRules = ReturnType<typeof getBusinessRules>;
+
+/**
+ * Spec §2.4 — the formula itself, kept separate from the tunable rates
+ * above. Callers MUST always present the extended-hire alternative
+ * alongside this fee (reg. 10) — enforced in
+ * src/app/api/hire-requests/route.ts, not here, since that's a request
+ * shape concern, not a math one.
+ */
+export function calculateHireFee(
+  proposedSalary: number,
+  shiftsCompletedAtRequest: number,
+  rules: BusinessRules = getBusinessRules()
+): number {
+  const { tier1, tier2, tier3Rate } = rules.hireFee;
+  const rate =
+    shiftsCompletedAtRequest < tier1.maxShifts
+      ? tier1.rate
+      : shiftsCompletedAtRequest < tier2.maxShifts
+        ? tier2.rate
+        : tier3Rate;
+  return proposedSalary * rate;
+}
