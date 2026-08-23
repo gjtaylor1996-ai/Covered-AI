@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Covered — Worker app</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2623; --ink-soft:#3A423E; --steel:#7C8B8A; --steel-light:#B9C2BF;
+    --paper:#E7E1CE; --paper-light:#F2EEE1; --card:#FBF9F2;
+    --amber:#E19A33; --amber-deep:#B9761F; --green:#3F6E52;
+    --line:rgba(31,38,35,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:40px 20px; min-height:100vh;
+    background:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    display:flex; justify-content:center;
+  }
+  h1,h2,h3,.display{font-family:'Oswald'; text-transform:uppercase; letter-spacing:0.02em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .phone{
+    width:380px;
+    background:var(--card);
+    border-radius:28px;
+    border:8px solid var(--ink);
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(31,38,35,0.25);
+    min-height:760px;
+    display:flex;
+    flex-direction:column;
+  }
+  .status-bar{
+    height:26px;
+    background:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .status-bar::after{
+    content:''; width:70px; height:5px; background:var(--paper); border-radius:3px;
+  }
+
+  .topbar{
+    background:var(--ink); color:var(--paper-light);
+    padding:16px 20px 20px;
+    border-bottom:3px solid var(--amber);
+  }
+  .topbar-row{display:flex; justify-content:space-between; align-items:center;}
+  .greet{font-size:13px; color:var(--steel-light);}
+  .greet b{color:var(--paper-light);}
+  .bell{width:30px;height:30px;border:1px solid var(--steel-light); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px;}
+
+  .view{padding:18px 20px 100px; flex:1; overflow-y:auto; display:none;}
+  .view.active{display:block;}
+
+  /* score hero */
+  .score-hero{
+    background:var(--ink); color:var(--paper-light);
+    border-radius:12px; padding:18px; margin-top:14px;
+    display:flex; align-items:center; gap:16px;
+  }
+  .score-stamp{
+    width:74px; height:74px; border-radius:50%;
+    border:2px solid var(--green);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transform:rotate(-8deg); position:relative; flex-shrink:0;
+  }
+  .score-stamp::after{content:''; position:absolute; inset:5px; border:1px dashed var(--green); border-radius:50%; opacity:.6;}
+  .score-stamp .num{font-family:'IBM Plex Mono'; font-weight:600; font-size:22px; color:var(--green);}
+  .score-stamp .tag{font-family:'IBM Plex Mono'; font-size:7.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--green);}
+  .score-copy .lbl{font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--steel-light);}
+  .score-copy h2{margin:2px 0 6px; font-size:19px; color:var(--paper-light);}
+  .score-copy p{margin:0; font-size:12px; color:var(--steel-light); line-height:1.4;}
+
+  .section-title{
+    font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--steel); margin:22px 0 10px;
+  }
+
+  .shift-card{
+    background:var(--paper-light); border:1px solid var(--line); border-radius:10px;
+    padding:14px; margin-bottom:10px;
+  }
+  .shift-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .shift-role{font-weight:600; font-size:14.5px;}
+  .shift-venue{font-size:12px; color:var(--steel); margin-top:2px;}
+  .shift-pay{font-family:'IBM Plex Mono'; font-size:13px; color:var(--amber-deep); font-weight:600;}
+  .shift-meta{display:flex; gap:12px; margin-top:8px; font-size:11.5px; color:var(--ink-soft);}
+  .badge{
+    display:inline-block; font-size:10px; font-family:'IBM Plex Mono'; padding:3px 8px;
+    border-radius:20px; margin-top:8px;
+  }
+  .badge.confirmed{background:rgba(63,110,82,0.14); color:var(--green);}
+  .badge.pending{background:rgba(225,154,51,0.16); color:var(--amber-deep);}
+
+  .factor-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .factor-row:last-child{border-bottom:none;}
+  .factor-bar-track{width:90px; height:5px; background:var(--paper); border-radius:3px; overflow:hidden;}
+  .factor-bar-fill{height:100%; background:var(--green);}
+  .factor-val{font-family:'IBM Plex Mono'; font-size:12px; width:34px; text-align:right;}
+
+  .why-box{
+    background:var(--paper-light); border:1px dashed var(--line); border-radius:10px;
+    padding:12px 14px; font-size:12px; color:var(--ink-soft); line-height:1.5; margin-top:14px;
+  }
+
+  .toggle-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .toggle-row:last-child{border-bottom:none;}
+  .toggle{
+    width:42px; height:24px; border-radius:14px; background:var(--steel-light);
+    position:relative; cursor:pointer; transition:background .15s ease; flex-shrink:0;
+  }
+  .toggle.on{background:var(--green);}
+  .toggle-dot{
+    position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%;
+    background:var(--card); transition:left .15s ease;
+  }
+  .toggle.on .toggle-dot{left:20px;}
+
+  .avail-day-card{padding:12px 0; border-bottom:1px solid var(--line);}
+  .avail-day-card:last-child{border-bottom:none;}
+  .avail-day-top{display:flex; justify-content:space-between; align-items:center;}
+  .avail-day-top .avail-day{font-size:13.5px; font-weight:600;}
+  .avail-time-row{display:flex; gap:10px; margin-top:10px; transition:opacity .15s ease;}
+  .time-field{flex:1; display:flex; flex-direction:column; gap:4px;}
+  .time-field label{font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--steel);}
+  .time-field input[type=time]{
+    font-family:'IBM Plex Sans'; font-size:13px; padding:8px 10px; border:1px solid var(--line);
+    border-radius:8px; background:var(--paper-light); color:var(--ink); width:100%;
+  }
+  .time-field input[type=time]:disabled{opacity:0.5;}
+
+  .cert-card{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--paper-light); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-bottom:8px;
+  }
+  .cert-name{font-size:13px; font-weight:600;}
+  .cert-sub{font-size:11px; color:var(--steel); margin-top:2px;}
+  .cert-status{font-family:'IBM Plex Mono'; font-size:10px; padding:3px 8px; border-radius:20px;}
+  .cert-status.valid{background:rgba(63,110,82,0.14); color:var(--green);}
+  .cert-status.expiring{background:rgba(225,154,51,0.16); color:var(--amber-deep);}
+
+  .profile-head{text-align:center; padding:10px 0 4px;}
+  .avatar-big{
+    width:70px; height:70px; border-radius:50%; background:var(--ink); color:var(--paper-light);
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:600;
+    font-size:24px; margin:0 auto 10px;
+  }
+
+  .tabbar{
+    display:flex; border-top:1px solid var(--line); background:var(--card);
+    position:sticky; bottom:0;
+  }
+  .tab{
+    flex:1; text-align:center; padding:12px 4px 10px; cursor:pointer;
+    font-family:'IBM Plex Mono'; font-size:10px; letter-spacing:.03em; color:var(--steel);
+  }
+  .tab .icon{font-size:17px; display:block; margin-bottom:2px;}
+  .tab.active{color:var(--ink);}
+  .tab.active .icon{color:var(--amber-deep);}
+
+  .empty-note{font-size:12px; color:var(--steel); text-align:center; padding:20px 0;}
+
+  /* worker-side shift log dispute flow */
+  .log-actions{margin-top:9px;}
+  .dispute-link{
+    font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.03em;
+    color:var(--amber-deep); cursor:pointer; text-decoration:underline;
+  }
+  .log-dispute-panel{
+    display:none; margin-top:10px; background:var(--card); border:1px dashed var(--line);
+    border-radius:8px; padding:12px;
+  }
+  .log-dispute-panel select{
+    width:100%; margin-bottom:8px; font-size:12px; padding:7px 9px; border:1px solid var(--line);
+    border-radius:6px; background:var(--paper-light); color:var(--ink);
+  }
+  .log-dispute-panel textarea{
+    width:100%; font-family:'IBM Plex Sans'; font-size:12px; border:1px solid var(--line); border-radius:6px;
+    padding:8px 10px; background:var(--paper-light); color:var(--ink); resize:none; margin-bottom:8px;
+  }
+  .log-dispute-actions{display:flex; gap:8px;}
+  .log-dispute-btn{
+    flex:1; text-align:center; padding:8px; border-radius:6px; font-family:'IBM Plex Mono'; font-size:10.5px;
+    text-transform:uppercase; cursor:pointer; border:1.5px solid var(--ink);
+  }
+  .log-dispute-btn.ghost{background:transparent; color:var(--ink);}
+  .log-dispute-btn.primary{background:var(--ink); color:var(--paper-light);}
+
+  .checking-state{
+    font-family:'IBM Plex Mono'; font-size:10px; color:var(--steel); display:flex; align-items:center; gap:7px;
+  }
+  .checking-dot{width:6px; height:6px; border-radius:50%; background:var(--amber-deep); animation:pulse 1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:0.25;} 50%{opacity:1;}}
+
+  .check-badge{
+    font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.03em;
+    border-radius:10px; padding:3px 9px; display:inline-block;
+  }
+  .check-badge.fast{background:rgba(63,110,82,0.14); color:var(--green);}
+  .check-badge.standard{background:rgba(225,154,51,0.16); color:var(--amber-deep);}
+  .check-evidence{font-size:11px; color:var(--ink-soft); margin-top:7px; line-height:1.5;}
+  .check-turnaround{font-size:10.5px; color:var(--steel); margin-top:5px; line-height:1.5;}
+
+  .sim-row{margin-top:11px; padding-top:9px; border-top:1px dashed var(--line);}
+  .sim-label{font-size:10px; color:var(--steel); font-style:italic; display:block; margin-bottom:7px;}
+  .sim-buttons{display:flex; gap:8px;}
+  .sim-btn{
+    font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; padding:7px 10px;
+    border-radius:6px; border:1px solid var(--line); background:var(--paper-light); color:var(--ink-soft); cursor:pointer;
+  }
+  .sim-btn:hover{border-color:var(--ink); color:var(--ink);}
+
+  .resolved-tag{
+    font-family:'IBM Plex Mono'; font-size:9.5px; border-radius:10px; padding:3px 9px; display:inline-block;
+  }
+  .resolved-tag.stands{background:rgba(225,154,51,0.16); color:var(--amber-deep);}
+  .resolved-tag.excluded{background:rgba(63,110,82,0.14); color:var(--green);}
+
+  /* two-way accountability: rate-a-venue */
+  .rate-prompt{
+    background:rgba(225,154,51,0.10); border:1px dashed var(--amber-deep); border-radius:10px;
+    padding:13px 14px; margin-bottom:14px;
+  }
+  .rate-prompt .rp-top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .rate-prompt .rp-venue{font-size:13.5px; font-weight:600;}
+  .rate-prompt .rp-sub{font-size:11px; color:var(--steel); margin-top:2px;}
+  .rate-btn{
+    font-family:'IBM Plex Mono'; font-size:10.5px; text-transform:uppercase; padding:8px 14px;
+    border-radius:6px; border:1px solid var(--amber-deep); background:var(--amber); color:var(--ink);
+    cursor:pointer; white-space:nowrap; flex-shrink:0;
+  }
+
+  .rating-panel{
+    display:none; background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:14px; margin:-4px 0 14px;
+  }
+  .rq-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .rq-row:last-of-type{border-bottom:none;}
+  .rq-text{font-size:12px; color:var(--ink-soft); max-width:62%; line-height:1.3;}
+  .rq-pills{display:flex; gap:6px; flex-shrink:0;}
+  .rq-pill{
+    font-family:'IBM Plex Mono'; font-size:10.5px; padding:6px 10px; border-radius:20px;
+    border:1px solid var(--line); background:var(--paper-light); color:var(--ink-soft); cursor:pointer;
+  }
+  .rq-pill.selected.yes{border-color:var(--green); background:rgba(63,110,82,0.14); color:var(--green);}
+  .rq-pill.selected.no{border-color:#B0463A; background:rgba(176,70,58,0.12); color:#8A392E;}
+  .rating-comment{
+    width:100%; margin-top:10px; font-family:'IBM Plex Sans'; font-size:12px; border:1px solid var(--line);
+    border-radius:8px; padding:9px 11px; background:var(--paper-light); color:var(--ink); resize:none;
+  }
+  .rating-actions{display:flex; gap:8px; margin-top:12px;}
+  .rating-btn{
+    flex:1; text-align:center; padding:10px; border-radius:8px; font-family:'IBM Plex Mono'; font-size:11px;
+    text-transform:uppercase; cursor:pointer; border:1.5px solid var(--ink);
+  }
+  .rating-btn.ghost{background:transparent; color:var(--ink);}
+  .rating-btn.primary{background:var(--ink); color:var(--paper-light);}
+
+  .venue-trust{
+    display:flex; gap:10px; flex-wrap:wrap; margin-top:9px; padding-top:9px; border-top:1px dashed var(--line);
+  }
+  .vt-item{font-size:10px; color:var(--ink-soft);}
+  .vt-item b{font-family:'IBM Plex Mono'; color:var(--green);}
+
+  .respond-actions{display:flex; gap:8px; margin-top:11px;}
+  .respond-btn{
+    flex:1; text-align:center; padding:10px; border-radius:8px; font-family:'IBM Plex Mono'; font-size:11px;
+    text-transform:uppercase; cursor:pointer; border:1.5px solid var(--ink);
+  }
+  .respond-btn.decline{background:transparent; color:var(--ink);}
+  .respond-btn.accept{background:var(--ink); color:var(--paper-light);}
+  .respond-btn:disabled{opacity:0.4; pointer-events:none;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(14px);
+    background:var(--ink); color:var(--paper-light); padding:11px 18px; border-radius:8px; font-size:12px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:300;
+    max-width:320px; text-align:center; box-shadow:0 10px 24px rgba(0,0,0,0.28);
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  .help-btn{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--steel-light); background:none;
+    color:var(--steel-light); font-family:'IBM Plex Mono'; font-size:12px; cursor:pointer; flex-shrink:0;
+  }
+  .help-btn:hover{border-color:var(--amber); color:var(--amber);}
+  .hub-link{
+    width:26px; height:26px; border-radius:50%; border:1px solid var(--steel-light); background:none;
+    color:var(--steel-light); font-size:12px; display:flex; align-items:center; justify-content:center;
+    text-decoration:none; flex-shrink:0;
+  }
+  .hub-link:hover{border-color:var(--amber); color:var(--amber);}
+
+  /* action summary */
+  .action-summary{
+    background:var(--ink); color:var(--paper-light); border-radius:10px; padding:14px 16px; margin-top:14px;
+  }
+  .as-title{
+    font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--amber); margin-bottom:8px;
+  }
+  .as-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px; padding:7px 0;
+    border-bottom:1px dashed rgba(242,238,225,0.15); font-size:12px;
+  }
+  .as-item:last-child{border-bottom:none;}
+  .as-item-text{line-height:1.4;}
+  .as-view-btn{
+    font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; color:var(--amber);
+    cursor:pointer; text-decoration:underline; background:none; border:none; padding:0; flex-shrink:0;
+  }
+  .as-empty{font-size:12px; color:var(--steel-light);}
+
+  /* permanent hire offer */
+  .hire-offer-card{
+    background:var(--card); border:1.5px solid var(--green); border-radius:10px; padding:14px 16px; margin-top:14px;
+  }
+  .hire-offer-tag{
+    font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.04em;
+    color:var(--green); margin-bottom:6px;
+  }
+  .hire-offer-venue{font-size:14px; font-weight:600; color:var(--ink); margin-bottom:3px;}
+  .hire-offer-role{font-size:12.5px; color:var(--ink-soft); margin-bottom:8px;}
+  .hire-offer-note{font-size:11px; color:var(--steel); line-height:1.5; margin-bottom:12px;}
+  .hire-offer-actions{display:flex; gap:8px;}
+
+  /* urgency escalation on pending badge */
+  .badge.urgent{background:rgba(176,70,58,0.16); color:#8A392E; animation:urgentPulse 1.6s ease-in-out infinite;}
+  @keyframes urgentPulse{0%,100%{opacity:1;} 50%{opacity:0.55;}}
+
+  /* earnings */
+  .earnings-teaser{
+    font-size:11.5px; color:var(--ink-soft); background:var(--paper-light); border:1px dashed var(--line);
+    border-radius:8px; padding:9px 12px; margin-bottom:10px;
+  }
+  .earnings-teaser b{font-family:'IBM Plex Mono'; color:var(--green);}
+  .earnings-row{display:flex; gap:10px; margin-bottom:14px;}
+  .earn-card{
+    flex:1; background:var(--paper-light); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+  }
+  .earn-label{font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--steel);}
+  .earn-value{font-family:'IBM Plex Mono'; font-size:19px; font-weight:600; color:var(--ink); margin-top:4px;}
+  .earn-sub{font-size:10.5px; color:var(--steel); margin-top:3px;}
+
+  /* factor trend */
+  .factor-trend{font-family:'IBM Plex Mono'; font-size:9.5px; margin-left:3px;}
+  .factor-trend.up{color:var(--green);}
+  .factor-trend.down{color:var(--amber-deep);}
+
+  /* cert renewal */
+  .cert-renew-btn{
+    font-family:'IBM Plex Mono'; font-size:9.5px; text-transform:uppercase; padding:5px 10px; border-radius:14px;
+    border:1px solid var(--amber-deep); background:var(--amber); color:var(--ink); cursor:pointer; white-space:nowrap;
+  }
+  .cert-renew-btn:disabled{opacity:0.5; pointer-events:none;}
+
+  /* onboarding */
+  .onboarding-overlay{
+    display:none; position:fixed; inset:0; background:rgba(31,38,35,0.68); z-index:500;
+    align-items:center; justify-content:center; padding:24px;
+  }
+  .onboarding-modal{
+    background:var(--card); border-radius:12px; padding:26px 24px; max-width:360px; width:100%;
+    box-shadow:0 24px 60px rgba(0,0,0,0.35);
+  }
+  .onboarding-mark{
+    width:40px; height:40px; border-radius:50%; border:2px solid var(--amber); color:var(--amber-deep);
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700;
+    font-size:11px; transform:rotate(-8deg); margin-bottom:12px;
+  }
+  .onboarding-modal h3{font-size:19px; margin:0 0 6px; color:var(--ink);}
+  .onboarding-sub{font-size:12.5px; color:var(--steel); margin:0 0 14px;}
+  .onboarding-item{font-size:12px; color:var(--ink-soft); line-height:1.55; padding:8px 0; border-bottom:1px dashed var(--line);}
+  .onboarding-item:last-of-type{border-bottom:none;}
+  .onboarding-btn{
+    margin-top:16px; width:100%; padding:11px; border:none; border-radius:8px; background:var(--ink);
+    color:var(--paper-light); font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase;
+    letter-spacing:0.03em; cursor:pointer;
+  }
+  .onboarding-btn:hover{background:var(--amber-deep);}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status-bar"></div>
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="greet">Good evening, <b>Priya</b></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="help-btn" onclick="reopenOnboarding()" title="Show the quick tour again">?</button>
+        <a href="index.html" class="hub-link" title="Back to demo hub">⌂</a>
+        <div class="bell">🔔</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="view active" id="view-home">
+    <div class="score-hero">
+      <div class="score-stamp"><div class="num">88</div><div class="tag">Reliable</div></div>
+      <div class="score-copy">
+        <div class="lbl">Your reliability score</div>
+        <h2>Solid, and climbing</h2>
+        <p>41 completed shifts · 3 no-shows logged over 14 months. Two more clean shifts moves you toward Top Rated.</p>
+      </div>
+    </div>
+
+    <div class="action-summary" id="action-summary">
+      <div class="as-title">Needs your attention</div>
+      <div class="as-items" id="as-items"></div>
+    </div>
+
+    <div class="hire-offer-card" id="hire-offer-card">
+      <div class="hire-offer-tag">Permanent role offer</div>
+      <div class="hire-offer-venue">The Marlowe Hotel wants to hire you permanently</div>
+      <div class="hire-offer-role">Assistant Bar Manager · £26,000/year · Starting 1 Sep 2026</div>
+      <div class="hire-offer-note">Accepting this ends your casual shifts with them through Covered — you'd become their direct employee instead.</div>
+      <div class="hire-offer-actions">
+        <button class="respond-btn decline" onclick="respondHireOffer('decline')">Decline</button>
+        <button class="respond-btn accept" onclick="respondHireOffer('accept')">Accept</button>
+      </div>
+    </div>
+
+    <div class="section-title">Action needed</div>
+    <div class="rate-prompt" id="rate-prompt">
+      <div class="rp-top">
+        <div>
+          <div class="rp-venue">Rate Halden Rooftop Bar</div>
+          <div class="rp-sub">Shift completed Thu, 9 Jul — takes 10 seconds</div>
+        </div>
+        <button class="rate-btn" onclick="toggleRatingPanel()">Rate</button>
+      </div>
+    </div>
+
+    <div class="rating-panel" id="rating-panel">
+      <div class="rq-row">
+        <span class="rq-text">Paid in full and on time?</span>
+        <div class="rq-pills">
+          <div class="rq-pill" onclick="selectPill(this,'yes')">Yes</div>
+          <div class="rq-pill" onclick="selectPill(this,'no')">No</div>
+        </div>
+      </div>
+      <div class="rq-row">
+        <span class="rq-text">Given your scheduled breaks?</span>
+        <div class="rq-pills">
+          <div class="rq-pill" onclick="selectPill(this,'yes')">Yes</div>
+          <div class="rq-pill" onclick="selectPill(this,'no')">No</div>
+        </div>
+      </div>
+      <div class="rq-row">
+        <span class="rq-text">Shift matched what was described?</span>
+        <div class="rq-pills">
+          <div class="rq-pill" onclick="selectPill(this,'yes')">Yes</div>
+          <div class="rq-pill" onclick="selectPill(this,'no')">No</div>
+        </div>
+      </div>
+      <textarea class="rating-comment" rows="2" placeholder="Anything else worth flagging? (optional, only visible to Covered)"></textarea>
+      <div class="rating-actions">
+        <div class="rating-btn ghost" onclick="toggleRatingPanel()">Cancel</div>
+        <div class="rating-btn primary" onclick="submitRating()">Submit</div>
+      </div>
+    </div>
+
+    <div class="section-title">Next shift</div>
+    <div class="earnings-teaser" id="earnings-teaser">This week so far: <b id="earnings-teaser-val">£78.00</b> · 1 shift confirmed</div>
+    <div class="shift-card">
+      <div class="shift-top">
+        <div>
+          <div class="shift-role">Waiter/Waitress</div>
+          <div class="shift-venue">The Marlowe Hotel — Bankside</div>
+        </div>
+        <div class="shift-pay">£12.00/hr</div>
+      </div>
+      <div class="shift-meta">
+        <span>📅 Fri, 24 Jul</span>
+        <span>🕔 5:00pm–11:30pm</span>
+        <span>📍 1.3 mi</span>
+      </div>
+      <span class="badge confirmed">Confirmed</span>
+      <div class="venue-trust">
+        <div class="vt-item">Paid on time <b>98%</b></div>
+        <div class="vt-item">Breaks given <b>95%</b></div>
+        <div class="vt-item">32 shifts rated</div>
+      </div>
+    </div>
+
+    <div class="section-title">Awaiting your response</div>
+    <div class="shift-card" id="shift-ascot">
+      <div class="shift-top">
+        <div>
+          <div class="shift-role">Event Steward</div>
+          <div class="shift-venue">Ascot — Car Park 3, Race Day</div>
+        </div>
+        <div class="shift-pay">£13.50/hr</div>
+      </div>
+      <div class="shift-meta">
+        <span>📅 Sat, 25 Jul</span>
+        <span>🕔 8:00am–7:00pm</span>
+        <span>📍 9.4 mi</span>
+      </div>
+      <span class="badge pending" id="ascot-badge">Respond by 8pm tonight</span>
+      <div class="venue-trust">
+        <div class="vt-item">Paid on time <b>91%</b></div>
+        <div class="vt-item">Breaks given <b>88%</b></div>
+        <div class="vt-item">14 shifts rated</div>
+      </div>
+      <div class="respond-actions" id="ascot-actions">
+        <button class="respond-btn decline" onclick="respondShift('decline')">Decline</button>
+        <button class="respond-btn accept" onclick="respondShift('accept')">Accept</button>
+      </div>
+    </div>
+
+    <div class="why-box">Declining a shift more than 48 hours out doesn't affect your score. Declining inside 4 hours of the start time does.</div>
+    <div class="why-box">Venues can't see your individual answers when you rate them — only an aggregate trust score, the same way clients only see your score and tier, not your raw shift log.</div>
+  </div>
+
+  <!-- SCORE -->
+  <div class="view" id="view-score">
+    <div class="score-hero">
+      <div class="score-stamp"><div class="num">88</div><div class="tag">Reliable</div></div>
+      <div class="score-copy">
+        <div class="lbl">Full breakdown</div>
+        <h2>What's behind your 88</h2>
+        <p>Up from 84 last month. Updated after every completed shift. Only you can see this level of detail — clients see the score and tier.</p>
+      </div>
+    </div>
+
+    <div class="section-title">Factors</div>
+    <div class="factor-row">
+      <span>Attendance rate</span>
+      <div class="factor-bar-track"><div class="factor-bar-fill" style="width:93%"></div></div>
+      <span class="factor-val">93% <span class="factor-trend up">▲2</span></span>
+    </div>
+    <div class="factor-row">
+      <span>On-time arrival</span>
+      <div class="factor-bar-track"><div class="factor-bar-fill" style="width:85%"></div></div>
+      <span class="factor-val">85% <span class="factor-trend down">▼3</span></span>
+    </div>
+    <div class="factor-row">
+      <span>Notice on cancellations</span>
+      <div class="factor-bar-track"><div class="factor-bar-fill" style="width:90%"></div></div>
+      <span class="factor-val">90% <span class="factor-trend up">▲1</span></span>
+    </div>
+    <div class="factor-row">
+      <span>Venue confirmations</span>
+      <div class="factor-bar-track"><div class="factor-bar-fill" style="width:88%"></div></div>
+      <span class="factor-val">88% <span class="factor-trend up">▲5</span></span>
+    </div>
+
+    <div class="section-title">Shift log</div>
+    <div class="shift-card">
+      <div class="shift-top">
+        <div class="shift-role">Waiter/Waitress — The Marlowe Hotel</div>
+        <div class="shift-pay mono" style="color:var(--green)">✓</div>
+      </div>
+      <div class="shift-meta"><span>Sat, 18 Jul · Completed, on time</span></div>
+    </div>
+    <div class="shift-card" id="log-late">
+      <div class="shift-top">
+        <div class="shift-role">Waiter/Waitress — Halden Rooftop Bar</div>
+        <div class="shift-pay mono" style="color:var(--amber-deep)">◐</div>
+      </div>
+      <div class="shift-meta"><span>Thu, 9 Jul · Completed, 12 min late</span></div>
+      <div class="log-actions" id="log-late-actions">
+        <span class="dispute-link" onclick="toggleLogDispute()">Dispute this record</span>
+      </div>
+      <div class="log-dispute-panel" id="log-late-dispute">
+        <select id="log-late-reason">
+          <option value="">Select a reason</option>
+          <option>The lateness was outside my control (e.g. transport delay)</option>
+          <option>This isn't accurate — I was on time</option>
+          <option>Other</option>
+        </select>
+        <textarea id="log-late-note" rows="2" placeholder="Add context for our review team (required)"></textarea>
+        <div class="log-dispute-actions">
+          <div class="log-dispute-btn ghost" onclick="toggleLogDispute()">Cancel</div>
+          <div class="log-dispute-btn primary" onclick="submitLogDispute()">Submit dispute</div>
+        </div>
+      </div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-top">
+        <div class="shift-role">Waiter/Waitress — Halden Rooftop Bar</div>
+        <div class="shift-pay mono" style="color:var(--steel)">i</div>
+      </div>
+      <div class="shift-meta"><span>Sat, 27 Jun · Cancelled, 6 days' notice — no effect on score</span></div>
+    </div>
+
+    <div class="why-box">Think a record is wrong? Dispute any single shift from the log — it runs an automated check first (attaching any clock-in data that applies), then a person decides. Excluded from your score while that's happening.</div>
+  </div>
+
+  <!-- SHIFTS/AVAILABILITY -->
+  <div class="view" id="view-avail">
+    <div class="section-title">Weekly availability</div>
+
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Monday</span><div class="toggle on" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row"><div class="time-field"><label>From</label><input type="time" value="17:00"></div><div class="time-field"><label>To</label><input type="time" value="23:00"></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Tuesday</span><div class="toggle" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row" style="opacity:0.35;"><div class="time-field"><label>From</label><input type="time" value="09:00" disabled></div><div class="time-field"><label>To</label><input type="time" value="17:00" disabled></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Wednesday</span><div class="toggle on" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row"><div class="time-field"><label>From</label><input type="time" value="17:00"></div><div class="time-field"><label>To</label><input type="time" value="23:00"></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Thursday</span><div class="toggle on" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row"><div class="time-field"><label>From</label><input type="time" value="17:00"></div><div class="time-field"><label>To</label><input type="time" value="23:00"></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Friday</span><div class="toggle on" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row"><div class="time-field"><label>From</label><input type="time" value="17:00"></div><div class="time-field"><label>To</label><input type="time" value="23:30"></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Saturday</span><div class="toggle on" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row"><div class="time-field"><label>From</label><input type="time" value="09:00"></div><div class="time-field"><label>To</label><input type="time" value="23:00"></div></div>
+    </div>
+    <div class="avail-day-card">
+      <div class="avail-day-top"><span class="avail-day">Sunday</span><div class="toggle" onclick="toggleDayAvail(this)"><div class="toggle-dot"></div></div></div>
+      <div class="avail-time-row" style="opacity:0.35;"><div class="time-field"><label>From</label><input type="time" value="09:00" disabled></div><div class="time-field"><label>To</label><input type="time" value="17:00" disabled></div></div>
+    </div>
+
+    <div class="section-title">Max travel distance</div>
+    <input type="range" min="1" max="30" value="15" style="width:100%;">
+
+    <div class="why-box">Shifts outside your travel range and availability windows are never shown to you — clients also can't book outside these without your confirmation.</div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="view" id="view-profile">
+    <div class="profile-head">
+      <div class="avatar-big">PN</div>
+      <h2 style="margin:4px 0 2px; font-size:18px;">Priya Nair</h2>
+      <div style="font-size:12px; color:var(--steel);">Waiter/Waitress · London</div>
+    </div>
+
+    <div class="section-title">Earnings</div>
+    <div class="earnings-row">
+      <div class="earn-card">
+        <div class="earn-label">This week</div>
+        <div class="earn-value" id="earn-this-week">£78.00</div>
+        <div class="earn-sub" id="earn-this-week-sub">1 confirmed shift</div>
+      </div>
+      <div class="earn-card">
+        <div class="earn-label">Last week</div>
+        <div class="earn-value">£166.50</div>
+        <div class="earn-sub">Paid Fri 18 Jul</div>
+      </div>
+    </div>
+
+    <div class="section-title">Certifications</div>
+    <div class="cert-card">
+      <div><div class="cert-name">Silver Service</div><div class="cert-sub">Issued by City Hospitality College</div></div>
+      <div class="cert-status valid">Verified</div>
+    </div>
+    <div class="cert-card" id="cert-hygiene">
+      <div><div class="cert-name">Level 2 Food Hygiene</div><div class="cert-sub" id="cert-hygiene-sub">Expires 14 Sep 2026</div></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="cert-status expiring" id="cert-hygiene-status">Renew soon</div>
+        <button class="cert-renew-btn" id="cert-hygiene-btn" onclick="renewCert()">Renew now</button>
+      </div>
+    </div>
+    <div class="cert-card">
+      <div><div class="cert-name">Right to work</div><div class="cert-sub">Checked via Home Office share code</div></div>
+      <div class="cert-status valid">Verified</div>
+    </div>
+
+    <div class="section-title">Payout details</div>
+    <div class="shift-card">
+      <div class="shift-meta" style="margin-top:0;">Bank account connected via Open Banking · Paid weekly, every Friday</div>
+    </div>
+
+    <div class="why-box">Your shift history with other venues is never shown to a new client by name — only the score it feeds into.</div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab active" data-view="view-home"><span class="icon">⌂</span>Home</div>
+    <div class="tab" data-view="view-score"><span class="icon">◎</span>Score</div>
+    <div class="tab" data-view="view-avail"><span class="icon">▤</span>Availability</div>
+    <div class="tab" data-view="view-profile"><span class="icon">☺</span>Profile</div>
+  </div>
+</div>
+
+<div class="onboarding-overlay" id="onboarding-overlay">
+  <div class="onboarding-modal">
+    <div class="onboarding-mark">AI</div>
+    <h3>Welcome to Covered</h3>
+    <p class="onboarding-sub">Four things worth knowing before you start:</p>
+    <div class="onboarding-item"><b>Reliability Score</b> — built from your real shift history: attendance, punctuality, notice given. Not a CV claim, and not something you can buy up.</div>
+    <div class="onboarding-item"><b>You rate venues too</b> — after each shift, three quick yes/no questions. Venues never see your individual answers, only the aggregate.</div>
+    <div class="onboarding-item"><b>Dispute anything that looks wrong</b> — flag a shift record, an automated check runs first, then a person makes the final call.</div>
+    <div class="onboarding-item"><b>Earnings, right here</b> — see what's confirmed for this week and what was paid last week, in your Profile tab.</div>
+    <button class="onboarding-btn" onclick="dismissOnboarding()">Got it, let's go</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.view).classList.add('active');
+  });
+});
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3400);
+}
+
+function toggleRatingPanel(){
+  const panel = document.getElementById('rating-panel');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function selectPill(el, val){
+  const wrap = el.parentElement;
+  wrap.querySelectorAll('.rq-pill').forEach(p=>p.classList.remove('selected','yes','no'));
+  el.classList.add('selected', val);
+}
+
+function submitRating(){
+  const panel = document.getElementById('rating-panel');
+  const answered = panel.querySelectorAll('.rq-pill.selected').length;
+  if(answered === 0){
+    showToast('Answer at least one question before submitting.');
+    return;
+  }
+  panel.style.display = 'none';
+  document.getElementById('rate-prompt').style.display = 'none';
+  showToast("Thanks — this feeds Halden Rooftop Bar's trust score. Venues never see your individual answers.");
+  updateActionSummary();
+}
+
+function respondShift(action){
+  const badge = document.getElementById('ascot-badge');
+  const actions = document.getElementById('ascot-actions');
+  const buttons = actions.querySelectorAll('.respond-btn');
+  buttons.forEach(b=>b.disabled = true);
+  if(action === 'accept'){
+    badge.textContent = 'Confirmed';
+    badge.classList.remove('pending','urgent');
+    badge.classList.add('confirmed');
+    showToast('Shift confirmed with Ascot — Car Park 3. Added to your schedule.');
+    earningsThisWeek.push({label:'Sat — Ascot Car Park 3', amount:148.50});
+    renderEarnings();
+  } else {
+    badge.textContent = 'Declined — no effect on your score';
+    badge.classList.remove('urgent');
+    showToast("Declined with over 48 hours' notice — this doesn't affect your Reliability Score.");
+  }
+  updateActionSummary();
+}
+
+/* ---------------- shift log dispute flow ---------------- */
+function toggleLogDispute(){
+  const panel = document.getElementById('log-late-dispute');
+  panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+}
+
+function submitLogDispute(){
+  const reason = document.getElementById('log-late-reason').value;
+  const note = document.getElementById('log-late-note').value.trim();
+  if(!reason || !note){
+    showToast('Select a reason and add a short note before submitting.');
+    return;
+  }
+  document.getElementById('log-late-dispute').style.display = 'none';
+  const actions = document.getElementById('log-late-actions');
+  actions.innerHTML = '<div class="checking-state"><span class="checking-dot"></span>Running an automated check…</div>';
+  showToast('Dispute submitted — running an automated check before it goes to review.');
+  setTimeout(runLogAutomatedCheck, 900);
+}
+
+function runLogAutomatedCheck(){
+  const actions = document.getElementById('log-late-actions');
+  const simControls = `
+    <div class="sim-row">
+      <span class="sim-label">Prototype only — a real reviewer decides this in 24h–5 days. Simulate their outcome:</span>
+      <div class="sim-buttons">
+        <button class="sim-btn" onclick="resolveLogDispute('stands')">Simulate: record stands</button>
+        <button class="sim-btn" onclick="resolveLogDispute('excluded')">Simulate: excluded from score</button>
+      </div>
+    </div>`;
+  actions.innerHTML = `
+    <span class="check-badge fast">Fast-track</span>
+    <div class="check-evidence">Automated check found matching platform data: GPS clock-in shows 6:12pm against a scheduled 6:00pm start — confirms 12 minutes late.</div>
+    <div class="check-turnaround">A person still makes the final call on whether it counts against you — e.g. a transport strike could be a valid exception even with matching clock data. Expect a decision within 24 hours. Excluded from your score until then.</div>
+    ${simControls}`;
+}
+
+function resolveLogDispute(outcome){
+  const actions = document.getElementById('log-late-actions');
+  if(outcome === 'excluded'){
+    actions.innerHTML = '<span class="resolved-tag excluded">Resolved — excluded from your score, lateness not held against you</span>';
+    showToast('Reviewer excluded this record — your on-time arrival factor will update next cycle.');
+  } else {
+    actions.innerHTML = '<span class="resolved-tag stands">Resolved — record stands, included in your score</span>';
+    showToast('Reviewer upheld this record — it remains part of your score.');
+  }
+}
+
+function respondHireOffer(action){
+  const card = document.getElementById('hire-offer-card');
+  const buttons = card.querySelectorAll('.respond-btn');
+  buttons.forEach(b=>b.disabled = true);
+  if(action === 'accept'){
+    showToast('Congratulations — you\u2019ve accepted a permanent role with The Marlowe Hotel. Their onboarding team will be in touch directly.');
+  } else {
+    showToast('Declined — you\u2019ll keep working casual shifts with The Marlowe Hotel through Covered as normal.');
+  }
+  card.style.display = 'none';
+  updateActionSummary();
+}
+window.respondHireOffer = respondHireOffer;
+
+function toggleDayAvail(el){
+  el.classList.toggle('on');
+  const isOn = el.classList.contains('on');
+  const card = el.closest('.avail-day-card');
+  const timeRow = card.querySelector('.avail-time-row');
+  timeRow.style.opacity = isOn ? '1' : '0.35';
+  timeRow.querySelectorAll('input').forEach(inp => inp.disabled = !isOn);
+}
+
+/* ---------------- earnings ---------------- */
+let earningsThisWeek = [{label:'Fri — The Marlowe Hotel', amount:78.00}];
+
+function renderEarnings(){
+  const total = earningsThisWeek.reduce((sum,s)=>sum+s.amount, 0);
+  const totalStr = '£' + total.toFixed(2);
+  const countStr = `${earningsThisWeek.length} confirmed shift${earningsThisWeek.length===1?'':'s'}`;
+  document.getElementById('earn-this-week').textContent = totalStr;
+  document.getElementById('earnings-teaser').innerHTML =
+    `This week so far: <b id="earnings-teaser-val">${totalStr}</b> · ${countStr}`;
+}
+
+/* ---------------- action summary ---------------- */
+function updateActionSummary(){
+  const items = [];
+  const hireCard = document.getElementById('hire-offer-card');
+  if(hireCard && hireCard.style.display !== 'none'){
+    items.push({text:'Respond to a permanent role offer from The Marlowe Hotel', target:'hire-offer-card'});
+  }
+  const ratePrompt = document.getElementById('rate-prompt');
+  if(ratePrompt && ratePrompt.style.display !== 'none'){
+    items.push({text:'Rate Halden Rooftop Bar', target:'rate-prompt'});
+  }
+  const ascotBadge = document.getElementById('ascot-badge');
+  if(ascotBadge && ascotBadge.classList.contains('pending')){
+    items.push({text:'Respond to the Ascot shift', target:'shift-ascot'});
+  }
+  const wrap = document.getElementById('as-items');
+  if(items.length === 0){
+    wrap.innerHTML = '<div class="as-empty">You\'re all caught up 🎉</div>';
+    return;
+  }
+  wrap.innerHTML = items.map(it => `
+    <div class="as-item">
+      <span class="as-item-text">${it.text}</span>
+      <button class="as-view-btn" onclick="scrollToTarget('${it.target}')">View</button>
+    </div>
+  `).join('');
+}
+window.updateActionSummary = updateActionSummary;
+
+function scrollToTarget(id){
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+}
+window.scrollToTarget = scrollToTarget;
+
+/* ---------------- urgency countdown on the pending shift ---------------- */
+function updateCountdown(){
+  const badge = document.getElementById('ascot-badge');
+  if(!badge || !badge.classList.contains('pending')) return;
+  const now = new Date();
+  const target = new Date();
+  target.setHours(20,0,0,0);
+  const diffMs = target - now;
+  if(diffMs <= 0){
+    badge.textContent = 'Response window closing — reply now';
+    badge.classList.add('urgent');
+    return;
+  }
+  const hours = Math.floor(diffMs/3600000);
+  const mins = Math.floor((diffMs%3600000)/60000);
+  badge.textContent = `Respond within ${hours}h ${mins}m`;
+  if(hours < 2){ badge.classList.add('urgent'); } else { badge.classList.remove('urgent'); }
+}
+
+/* ---------------- certification renewal ---------------- */
+function renewCert(){
+  const btn = document.getElementById('cert-hygiene-btn');
+  const status = document.getElementById('cert-hygiene-status');
+  const sub = document.getElementById('cert-hygiene-sub');
+  btn.textContent = 'Uploaded ✓';
+  btn.disabled = true;
+  status.textContent = 'Verifying';
+  status.classList.remove('expiring');
+  setTimeout(()=>{
+    status.textContent = 'Verified';
+    status.classList.add('valid');
+    sub.textContent = 'Expires 14 Sep 2027';
+    showToast('New certificate uploaded — verifying against the issuing body now.');
+  }, 900);
+}
+window.renewCert = renewCert;
+
+/* ---------------- first-time onboarding ---------------- */
+function checkOnboarding(){
+  try{
+    const seen = localStorage.getItem('covered_worker_onboarding_seen');
+    if(seen !== 'true'){
+      document.getElementById('onboarding-overlay').style.display = 'flex';
+    }
+  }catch(e){
+    document.getElementById('onboarding-overlay').style.display = 'flex';
+  }
+}
+function dismissOnboarding(){
+  document.getElementById('onboarding-overlay').style.display = 'none';
+  try{ localStorage.setItem('covered_worker_onboarding_seen', 'true'); }
+  catch(e){ console.error('could not save onboarding state', e); }
+}
+window.dismissOnboarding = dismissOnboarding;
+function reopenOnboarding(){
+  document.getElementById('onboarding-overlay').style.display = 'flex';
+}
+window.reopenOnboarding = reopenOnboarding;
+
+/* ---------------- init ---------------- */
+updateActionSummary();
+updateCountdown();
+setInterval(updateCountdown, 60000);
+checkOnboarding();
+</script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Covered — Join as a worker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2623; --ink-soft:#3A423E; --steel:#7C8B8A; --steel-light:#B9C2BF;
+    --paper:#E7E1CE; --paper-light:#F2EEE1; --card:#FBF9F2;
+    --amber:#E19A33; --amber-deep:#B9761F; --green:#3F6E52; --red:#B0463A;
+    --line:rgba(31,38,35,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:40px 20px; min-height:100vh;
+    background:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    display:flex; justify-content:center;
+  }
+  h1,h2,h3{font-family:'Oswald'; text-transform:uppercase; letter-spacing:0.02em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .phone{
+    width:390px;
+    background:var(--card);
+    border-radius:28px;
+    border:8px solid var(--ink);
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(31,38,35,0.25);
+    min-height:800px;
+    display:flex;
+    flex-direction:column;
+  }
+  .status-bar{height:26px; background:var(--ink); display:flex; align-items:center; justify-content:center;}
+  .status-bar::after{content:''; width:70px; height:5px; background:var(--paper); border-radius:3px;}
+
+  .topbar{
+    background:var(--ink); color:var(--paper-light);
+    padding:16px 20px 18px; border-bottom:3px solid var(--amber);
+  }
+  .topbar-row{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;}
+  .brand-mini{display:flex; align-items:center; gap:8px;}
+  .brand-mini .dot{width:26px; height:26px; border-radius:50%; border:1.5px solid var(--amber); display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--amber); font-family:'Oswald';}
+  .brand-mini span{font-family:'Oswald'; font-size:14px; letter-spacing:0.05em;}
+  .step-label{font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--steel-light);}
+
+  .progress-track{display:flex; gap:5px;}
+  .progress-seg{flex:1; height:4px; border-radius:3px; background:rgba(242,238,225,0.18);}
+  .progress-seg.done{background:var(--amber);}
+
+  .view{padding:22px 20px 20px; flex:1; overflow-y:auto; display:none;}
+  .view.active{display:block;}
+
+  .step-title{font-size:20px; margin:2px 0 6px; color:var(--ink);}
+  .step-sub{font-size:12.5px; color:var(--steel); line-height:1.5; margin:0 0 20px;}
+
+  .field-group{margin-bottom:16px;}
+  label.field-label{
+    display:block; font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--steel); margin-bottom:6px;
+  }
+  input[type=text], input[type=tel], input[type=email], select{
+    width:100%; font-family:'IBM Plex Sans'; font-size:14px; padding:11px 12px;
+    border:1.5px solid var(--line); border-radius:8px; background:var(--paper-light); color:var(--ink);
+  }
+  input:focus, select:focus{outline:none; border-color:var(--amber);}
+
+  .role-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .role-chip{
+    padding:12px 8px; border:1.5px solid var(--line); border-radius:8px; text-align:center;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; background:var(--paper-light);
+  }
+  .role-chip.selected{border-color:var(--amber); background:rgba(225,154,51,0.12); color:var(--amber-deep);}
+
+  .slider-row{margin-bottom:18px;}
+  .slider-row .val{font-family:'IBM Plex Mono'; color:var(--amber-deep); font-weight:600;}
+  input[type=range]{width:100%; height:3px; background:var(--steel-light); border-radius:2px; -webkit-appearance:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--amber); border:2px solid var(--ink); cursor:pointer;}
+
+  .day-row{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line);}
+  .day-row:last-child{border-bottom:none;}
+  .toggle{width:40px; height:23px; border-radius:14px; background:var(--steel-light); position:relative; cursor:pointer; flex-shrink:0;}
+  .toggle.on{background:var(--green);}
+  .toggle-dot{position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:var(--card); transition:left .12s ease;}
+  .toggle.on .toggle-dot{left:19px;}
+
+  .cert-item{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--paper-light); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-bottom:8px;
+  }
+  .cert-item .name{font-size:13px; font-weight:600;}
+  .cert-item .sub{font-size:10.5px; color:var(--steel); margin-top:2px;}
+  .upload-btn{
+    font-family:'IBM Plex Mono'; font-size:10.5px; padding:7px 12px; border-radius:20px;
+    border:1.5px solid var(--ink); background:transparent; color:var(--ink); cursor:pointer; white-space:nowrap;
+  }
+  .upload-btn.done{border-color:var(--green); color:var(--green); background:rgba(63,110,82,0.1);}
+
+  .verify-item{display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+  .verify-item:last-child{border-bottom:none;}
+  .verify-icon{width:32px; height:32px; border-radius:50%; background:var(--paper-light); border:1.5px solid var(--line); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px;}
+  .verify-copy .t{font-size:13px; font-weight:600;}
+  .verify-copy .d{font-size:11px; color:var(--steel); margin-top:2px; line-height:1.4;}
+
+  .consent-box{
+    display:flex; gap:10px; align-items:flex-start; background:var(--paper-light);
+    border:1px dashed var(--line); border-radius:10px; padding:12px 14px; margin-top:16px;
+  }
+  .consent-box input{margin-top:3px; flex-shrink:0;}
+  .consent-box p{font-size:11.5px; color:var(--ink-soft); margin:0; line-height:1.5;}
+
+  .bank-card{
+    background:var(--ink); color:var(--paper-light); border-radius:12px; padding:18px; text-align:center; margin-bottom:16px;
+  }
+  .bank-card .icon{font-size:26px; margin-bottom:8px;}
+  .bank-card h3{font-size:15px; margin:0 0 6px; color:var(--paper-light);}
+  .bank-card p{font-size:11.5px; color:var(--steel-light); margin:0 0 14px; line-height:1.4;}
+  .connect-btn{
+    width:100%; padding:11px; border-radius:8px; border:none; background:var(--amber); color:var(--ink);
+    font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; text-transform:uppercase; cursor:pointer;
+  }
+  .connect-btn.connected{background:var(--green); color:var(--paper-light);}
+
+  .review-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px dashed var(--line); font-size:12.5px;}
+  .review-row .k{color:var(--steel);}
+  .review-row .v{color:var(--ink); font-weight:600; text-align:right; max-width:60%;}
+
+  .navbar{
+    display:flex; gap:10px; padding:14px 20px; border-top:1px solid var(--line); background:var(--card);
+  }
+  .btn{
+    flex:1; text-align:center; padding:12px; border-radius:8px; font-family:'IBM Plex Mono';
+    font-size:12px; text-transform:uppercase; letter-spacing:0.03em; cursor:pointer; border:1.5px solid var(--ink);
+  }
+  .btn.ghost{background:transparent; color:var(--ink);}
+  .btn.primary{background:var(--ink); color:var(--paper-light);}
+  .btn.primary:hover{background:var(--amber-deep); border-color:var(--amber-deep);}
+  .btn.disabled{opacity:0.4; pointer-events:none;}
+
+  /* success screen */
+  .success-wrap{text-align:center; padding:30px 10px;}
+  .success-stamp{
+    width:90px; height:90px; border-radius:50%; border:2px solid var(--steel); margin:0 auto 18px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-8deg); position:relative;
+  }
+  .success-stamp::after{content:''; position:absolute; inset:6px; border:1px dashed var(--steel); border-radius:50%; opacity:.6;}
+  .success-stamp .tag{font-family:'IBM Plex Mono'; font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--steel);}
+  .success-wrap h2{font-size:20px; color:var(--ink); margin:0 0 10px;}
+  .success-wrap p{font-size:13px; color:var(--ink-soft); line-height:1.6; margin:0 auto 6px; max-width:280px;}
+  .success-note{
+    background:var(--paper-light); border:1px dashed var(--line); border-radius:10px; padding:14px; margin-top:20px; text-align:left;
+    font-size:11.5px; color:var(--steel);
+  }
+  .go-to-app-btn{
+    display:block; margin-top:20px; padding:12px; border-radius:8px; background:var(--ink); color:var(--paper-light);
+    font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; letter-spacing:0.03em;
+    text-decoration:none; text-align:center;
+  }
+  .go-to-app-btn:hover{background:var(--amber-deep);}
+  .back-to-hub-link{
+    display:inline-block; margin-top:14px; font-size:11.5px; color:var(--steel); text-decoration:underline;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="status-bar"></div>
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand-mini"><div class="dot">AI</div><span>COVERED</span></div>
+      <div class="step-label"><span id="step-current">1</span> / 7</div>
+    </div>
+    <div class="progress-track" id="progress-track"></div>
+  </div>
+
+  <!-- STEP 1: BASICS -->
+  <div class="view active" data-step="1">
+    <div class="step-title">Let's get the basics</div>
+    <p class="step-sub">This is what venues will see first. Takes about 2 minutes.</p>
+
+    <div class="field-group">
+      <label class="field-label">Full name</label>
+      <input type="text" placeholder="e.g. Priya Nair" id="in-name">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Phone number</label>
+      <input type="tel" placeholder="07…">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Email</label>
+      <input type="email" placeholder="you@example.com">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Primary role</label>
+      <div class="role-grid" id="role-grid">
+        <div class="role-chip">Bartender</div>
+        <div class="role-chip">Waiter/Waitress</div>
+        <div class="role-chip">Chef</div>
+        <div class="role-chip">Sous Chef</div>
+        <div class="role-chip">Chef de Partie</div>
+        <div class="role-chip">Commis Chef</div>
+        <div class="role-chip">Kitchen Porter</div>
+        <div class="role-chip">Event Steward</div>
+        <div class="role-chip">Housekeeper</div>
+        <div class="role-chip">Barista</div>
+        <div class="role-chip">FOH Manager</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: LOCATION & AVAILABILITY -->
+  <div class="view" data-step="2">
+    <div class="step-title">Where and when you can work</div>
+    <p class="step-sub">Shifts outside your radius or availability are never shown to you.</p>
+
+    <div class="field-group">
+      <label class="field-label">Postcode</label>
+      <input type="text" placeholder="e.g. SE1 9GY">
+    </div>
+
+    <div class="slider-row">
+      <label class="field-label">Max travel distance — <span class="val" id="dist-val">15 mi</span></label>
+      <input type="range" min="1" max="30" value="15" id="dist-slider">
+    </div>
+
+    <label class="field-label" style="margin-bottom:4px;">Weekly availability</label>
+    <div id="avail-list">
+      <div class="day-row"><span>Monday evenings</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Tuesday evenings</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Wednesday evenings</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Thursday evenings</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Friday evenings</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Saturday, all day</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+      <div class="day-row"><span>Sunday, all day</span><div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-dot"></div></div></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: EXPERIENCE -->
+  <div class="view" data-step="3">
+    <div class="step-title">Your experience</div>
+    <p class="step-sub">Be accurate — this is checked against your certifications and shift history, not just what you type here.</p>
+
+    <div class="field-group">
+      <label class="field-label">Years of experience in this role</label>
+      <select>
+        <option>Less than 1 year</option>
+        <option>1–2 years</option>
+        <option selected>3–5 years</option>
+        <option>6–10 years</option>
+        <option>10+ years</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Most recent employer (optional)</label>
+      <input type="text" placeholder="e.g. The Marlowe Hotel">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Hourly rate expectation</label>
+      <input type="text" placeholder="e.g. £13.50/hr">
+    </div>
+
+    <div class="consent-box">
+      <input type="checkbox" checked disabled>
+      <p>New to the role? That's fine — you'll start in our "Rising" tier and build a full score from your first shifts on Covered.</p>
+    </div>
+  </div>
+
+  <!-- STEP 4: CERTIFICATIONS -->
+  <div class="view" data-step="4">
+    <div class="step-title">Certifications</div>
+    <p class="step-sub">Upload what you have — each is checked against the issuing body. You can add more later.</p>
+
+    <div class="cert-item">
+      <div><div class="name">Level 2 Food Hygiene</div><div class="sub">PDF or photo of certificate</div></div>
+      <button class="upload-btn" onclick="markUploaded(this)">Upload</button>
+    </div>
+    <div class="cert-item">
+      <div><div class="name">Personal Licence</div><div class="sub">If applicable</div></div>
+      <button class="upload-btn" onclick="markUploaded(this)">Upload</button>
+    </div>
+    <div class="cert-item">
+      <div><div class="name">Silver Service</div><div class="sub">If applicable</div></div>
+      <button class="upload-btn" onclick="markUploaded(this)">Upload</button>
+    </div>
+    <div class="cert-item">
+      <div><div class="name">First Aid at Work</div><div class="sub">If applicable</div></div>
+      <button class="upload-btn" onclick="markUploaded(this)">Upload</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: VERIFICATION -->
+  <div class="view" data-step="5">
+    <div class="step-title">Identity & right to work</div>
+    <p class="step-sub">Required before you can be booked for any shift.</p>
+
+    <div class="verify-item">
+      <div class="verify-icon">🪪</div>
+      <div class="verify-copy"><div class="t">ID document</div><div class="d">Passport or biometric residence permit, checked via a certified provider.</div></div>
+    </div>
+    <div class="verify-item">
+      <div class="verify-icon">✓</div>
+      <div class="verify-copy"><div class="t">Right to work</div><div class="d">Verified through the Home Office online checking service.</div></div>
+    </div>
+    <div class="verify-item">
+      <div class="verify-icon">🛡</div>
+      <div class="verify-copy"><div class="t">DBS check</div><div class="d">Only requested if your selected role needs one.</div></div>
+    </div>
+
+    <div class="consent-box">
+      <input type="checkbox" id="consent-check">
+      <p>I consent to Covered verifying my identity, right to work and relevant certifications, and understand my shift history feeds my Reliability Score. Full detail in the Privacy Policy.</p>
+    </div>
+  </div>
+
+  <!-- STEP 6: PAYOUT -->
+  <div class="view" data-step="6">
+    <div class="step-title">Get paid</div>
+    <p class="step-sub">Connect a bank account so you're paid automatically after each completed shift.</p>
+
+    <div class="bank-card">
+      <div class="icon">🏦</div>
+      <h3>Connect your bank</h3>
+      <p>Secure, read-only connection via Open Banking. Covered never sees or stores your login details.</p>
+      <button class="connect-btn" id="bank-btn" onclick="connectBank(this)">Connect bank account</button>
+    </div>
+    <p class="step-sub" style="margin:0;">Paid weekly, every Friday, for all shifts completed that week.</p>
+  </div>
+
+  <!-- STEP 7: REVIEW -->
+  <div class="view" data-step="7">
+    <div class="step-title">Review & submit</div>
+    <p class="step-sub">Double-check the essentials — you can edit everything later in your profile.</p>
+
+    <div class="review-row"><span class="k">Name</span><span class="v" id="rev-name">—</span></div>
+    <div class="review-row"><span class="k">Role</span><span class="v" id="rev-role">—</span></div>
+    <div class="review-row"><span class="k">Max distance</span><span class="v" id="rev-dist">15 mi</span></div>
+    <div class="review-row"><span class="k">Certifications uploaded</span><span class="v" id="rev-certs">0</span></div>
+    <div class="review-row"><span class="k">Identity consent</span><span class="v" id="rev-consent">Not given</span></div>
+    <div class="review-row"><span class="k">Bank connected</span><span class="v" id="rev-bank">Not connected</span></div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="view" data-step="success">
+    <div class="success-wrap">
+      <div class="success-stamp"><div class="tag">Rising</div></div>
+      <h2>You're in — verification underway</h2>
+      <p>We're checking your documents and certifications now. This usually takes under 24 hours.</p>
+      <p>Your Reliability Score starts building from your very first shift.</p>
+      <div class="success-note">
+        You'll get a notification the moment you're fully verified and bookable. Until then, you can browse — but not accept — nearby shifts in the app.
+      </div>
+      <a href="covered-candidate-app.html" class="go-to-app-btn">Go to your worker app →</a>
+      <div><a href="index.html" class="back-to-hub-link">← Back to demo hub</a></div>
+    </div>
+  </div>
+
+  <div class="navbar" id="navbar">
+    <div class="btn ghost" id="btn-back" onclick="go(-1)">Back</div>
+    <div class="btn primary" id="btn-next" onclick="go(1)">Continue</div>
+  </div>
+</div>
+
+<script>
+const totalSteps = 7;
+let current = 1;
+let selectedRole = null;
+let certsUploaded = 0;
+
+// build progress segments
+const track = document.getElementById('progress-track');
+for(let i=0;i<totalSteps;i++){
+  const seg = document.createElement('div');
+  seg.className = 'progress-seg';
+  track.appendChild(seg);
+}
+
+document.querySelectorAll('.role-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.role-chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    selectedRole = chip.textContent;
+  });
+});
+
+document.getElementById('dist-slider').addEventListener('input', (e)=>{
+  document.getElementById('dist-val').textContent = e.target.value + ' mi';
+});
+
+function markUploaded(btn){
+  btn.textContent = 'Uploaded ✓';
+  btn.classList.add('done');
+  certsUploaded++;
+}
+
+function connectBank(btn){
+  btn.textContent = 'Connected ✓';
+  btn.classList.add('connected');
+}
+
+function updateProgress(){
+  document.querySelectorAll('.progress-seg').forEach((seg, i)=>{
+    seg.classList.toggle('done', i < current);
+  });
+  document.getElementById('step-current').textContent = Math.min(current, totalSteps);
+}
+
+function showStep(step){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const target = step === 'success' ? 'success' : step;
+  document.querySelector(`.view[data-step="${target}"]`).classList.add('active');
+  updateProgress();
+
+  const backBtn = document.getElementById('btn-back');
+  const nextBtn = document.getElementById('btn-next');
+  if(step === 'success'){
+    document.getElementById('navbar').style.display = 'none';
+    return;
+  }
+  document.getElementById('navbar').style.display = 'flex';
+  backBtn.classList.toggle('disabled', step === 1);
+  nextBtn.textContent = step === totalSteps ? 'Submit application' : 'Continue';
+}
+
+function fillReview(){
+  document.getElementById('rev-name').textContent = document.getElementById('in-name').value || '—';
+  document.getElementById('rev-role').textContent = selectedRole || '—';
+  document.getElementById('rev-dist').textContent = document.getElementById('dist-val').textContent;
+  document.getElementById('rev-certs').textContent = certsUploaded;
+  document.getElementById('rev-consent').textContent = document.getElementById('consent-check').checked ? 'Given' : 'Not given';
+  document.getElementById('rev-bank').textContent = document.getElementById('bank-btn').classList.contains('connected') ? 'Connected' : 'Not connected';
+}
+
+function go(dir){
+  if(dir === 1 && current === totalSteps){
+    showStep('success');
+    return;
+  }
+  current += dir;
+  if(current < 1) current = 1;
+  if(current > totalSteps) current = totalSteps;
+  if(current === totalSteps) fillReview();
+  showStep(current);
+}
+
+showStep(current);
+</script>
+</body>
+</html>

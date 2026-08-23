@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Covered — Investor demo hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2623; --ink-soft:#3A423E; --steel:#7C8B8A; --steel-light:#B9C2BF;
+    --paper:#E7E1CE; --paper-light:#F2EEE1; --card:#FBF9F2;
+    --amber:#E19A33; --amber-deep:#B9761F; --green:#3F6E52; --line:rgba(31,38,35,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif;}
+  h1,h2,h3{font-family:'Oswald'; text-transform:uppercase; letter-spacing:0.02em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .rail{background:var(--ink); color:var(--paper-light); border-bottom:4px solid var(--amber); padding:36px 28px 30px;}
+  .rail-inner{max-width:1080px; margin:0 auto;}
+  .brand{display:flex; align-items:center; gap:14px; margin-bottom:14px;}
+  .brand-mark{
+    width:46px; height:46px; border:2px solid var(--amber); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; transform:rotate(-8deg); flex-shrink:0;
+  }
+  .brand-mark span{font-family:'Oswald'; font-weight:700; font-size:11px; color:var(--amber);}
+  .brand-name{font-size:32px; font-weight:700; margin:0; line-height:1;}
+  .rail p.sub{font-size:14.5px; color:var(--steel-light); max-width:640px; margin:0;}
+
+  .howto{
+    background:var(--card); border:1px dashed var(--line); border-radius:10px; padding:16px 20px;
+    max-width:1080px; margin:-16px auto 0; position:relative; font-size:13px; color:var(--ink-soft); line-height:1.6;
+  }
+  .howto b{color:var(--ink);}
+
+  main{max-width:1080px; margin:0 auto; padding:36px 28px 60px;}
+  .section-title{
+    font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--amber-deep); margin:0 0 6px;
+  }
+  .section-sub{font-size:13.5px; color:var(--ink-soft); margin:0 0 20px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px; margin-bottom:44px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px;
+    display:flex; flex-direction:column; gap:10px; text-decoration:none; color:inherit;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{transform:translateY(-3px); box-shadow:0 10px 26px rgba(31,38,35,0.12);}
+  .card .step{font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--amber-deep); text-transform:uppercase; letter-spacing:0.04em;}
+  .card h3{font-size:16px; margin:0; color:var(--ink); text-transform:none; letter-spacing:0; font-family:'IBM Plex Sans'; font-weight:600;}
+  .card p{font-size:12.5px; color:var(--ink-soft); margin:0; line-height:1.5; flex:1;}
+  .card .open{font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; color:var(--ink); letter-spacing:0.03em;}
+  .card .open::after{content:' →';}
+
+  .doc-list{display:flex; flex-direction:column; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--card);}
+  .doc-row{
+    display:flex; justify-content:space-between; align-items:center; gap:16px; padding:14px 20px;
+    border-bottom:1px solid var(--line); text-decoration:none; color:inherit;
+  }
+  .doc-row:last-child{border-bottom:none;}
+  .doc-row:hover{background:var(--paper-light);}
+  .doc-name{font-size:13.5px; font-weight:600; color:var(--ink);}
+  .doc-desc{font-size:12px; color:var(--steel); margin-top:2px;}
+  .new-badge{
+    font-family:'IBM Plex Mono'; font-size:9px; text-transform:uppercase; letter-spacing:0.03em;
+    background:var(--amber); color:var(--ink); border-radius:10px; padding:2px 8px; margin-left:8px;
+    vertical-align:middle;
+  }
+  .whats-new{
+    background:var(--card); border:1px dashed var(--amber-deep); border-radius:10px;
+    padding:16px 20px; max-width:1080px; margin:20px auto 0;
+  }
+  .whats-new-title{
+    font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--amber-deep); margin-bottom:8px;
+  }
+  .whats-new ul{margin:0; padding-left:18px;}
+  .whats-new li{font-size:12.5px; color:var(--ink-soft); line-height:1.6;}
+  .doc-type{
+    font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; color:var(--steel);
+    border:1px solid var(--line); border-radius:12px; padding:4px 10px; flex-shrink:0;
+  }
+
+  footer{max-width:1080px; margin:0 auto; padding:0 28px 50px; font-size:11.5px; color:var(--steel);}
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <div class="rail-inner">
+    <div class="brand">
+      <div class="brand-mark"><span>AI</span></div>
+      <p class="brand-name">Covered — Investor Demo Hub</p>
+    </div>
+    <p class="sub">Everything built so far, in one place: click-through product prototypes for both sides of the marketplace, plus the business and fundraising materials.</p>
+  </div>
+</div>
+
+<div class="howto">
+  <b>How to use this:</b> save every file from this package into the same folder, then open this page from there. The links below are relative paths — they only resolve correctly when all the files sit alongside each other. Suggested order: start at <b>Log in</b>, pick a role, and you'll land in the matching app.
+</div>
+
+<div class="whats-new">
+  <div class="whats-new-title">What's new in this version</div>
+  <ul>
+    <li><b>Founding venue programme</b> — new document with the actual proposed terms: 8% commission, 15-venue cap, 90-day window, same-day support target, referral reward.</li>
+    <li><b>Venue outreach milestone plan</b> — new phased go-to-market plan from first contact through to a liquid pilot, including activation tracking (not just signups) and explicit re-plan triggers if conversion or fill rate underperforms.</li>
+    <li><b>Financial model</b> — added full P&amp;L, Cash Flow Statement and Balance Sheet tabs, formula-linked to the same assumptions as everything else. Surfaces a real finding: at current assumptions, equity goes negative by Year 3 without a follow-on raise.</li>
+    <li><b>Technical specification</b> — added an MVP phasing plan, the internal admin/dispute-review panel spec, a corrected multi-user venue data model, a role permission matrix, and race-condition handling for double-booking and concurrent disputes.</li>
+    <li><b>Client dashboard &amp; worker app</b> — added the permanent hire ("temp-to-perm") flow on both sides, with the UK Conduct Regulations 2003 fee/extension requirement built in.</li>
+    <li><b>Storage</b> — favourites, onboarding state, and the connected demo now use browser-local storage instead of a Claude-only API, so everything still works once deployed to a real domain.</li>
+  </ul>
+</div>
+
+<main>
+  <div class="section-title">Try the product</div>
+  <p class="section-sub">Fully interactive — no real backend, but every flow described in the deck is actually click-through testable here.</p>
+  <div class="grid">
+    <a class="card" href="covered-landing.html">
+      <div class="step">Start here</div>
+      <h3>Public landing page</h3>
+      <p>The pre-login marketing site — what a stranger sees before they ever sign up. Hero, how it works, pricing, FAQ.</p>
+      <div class="open">Open</div>
+    </a>
+    <a class="card" href="covered-login.html">
+      <div class="step">Then</div>
+      <h3>Log in</h3>
+      <p>Pick "Candidate" or "Client / venue" and sign in with anything — routes you straight into the matching experience below.</p>
+      <div class="open">Open</div>
+    </a>
+    <a class="card" href="covered.html">
+      <div class="step">Venue side</div>
+      <h3>Client dashboard</h3>
+      <p>Search & filter candidates, predicted demand, one-tap rebooking, and the Analytics tab with your own trust score, insights, and the dispute flow.</p>
+      <div class="open">Open</div>
+    </a>
+    <a class="card" href="covered-candidate-app.html">
+      <div class="step">Worker side</div>
+      <h3>Worker app</h3>
+      <p>Shifts, earnings, Reliability Score breakdown, per-day availability, rating venues back, and disputing a shift record.</p>
+      <div class="open">Open</div>
+    </a>
+    <a class="card" href="covered-worker-onboarding.html">
+      <div class="step">Worker side</div>
+      <h3>Worker onboarding</h3>
+      <p>The sign-up flow a new worker goes through — basics, availability, certifications, consent — before they're bookable. Links into the worker app at the end.</p>
+      <div class="open">Open</div>
+    </a>
+    <a class="card" href="covered-connected-demo.html">
+      <div class="step">See it connect</div>
+      <h3>Connected demo</h3>
+      <p>Submit an onboarding application and watch it actually appear as a pending candidate in the client dashboard — a live example of the two sides sharing data.</p>
+      <div class="open">Open</div>
+    </a>
+  </div>
+
+  <div class="section-title">Business &amp; fundraising materials</div>
+  <p class="section-sub">Click to open or download.</p>
+  <div class="doc-list">
+    <a class="doc-row" href="Covered-Pitch-Deck.pptx">
+      <div><div class="doc-name">Investor pitch deck</div><div class="doc-desc">18 slides — problem through the ask, including risks &amp; mitigations</div></div>
+      <div class="doc-type">.pptx</div>
+    </a>
+    <a class="doc-row" href="Covered-Venue-Sales-Deck.pptx">
+      <div><div class="doc-name">Venue sales deck</div><div class="doc-desc">10 slides — pitching Covered directly to hospitality venues</div></div>
+      <div class="doc-type">.pptx</div>
+    </a>
+    <a class="doc-row" href="Covered-Founding-Venue-Programme.docx">
+      <div><div class="doc-name">Founding venue programme <span class="new-badge">New</span></div><div class="doc-desc">The actual terms: 8% commission, 15-venue cap, 90-day window, referral reward</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Venue-Outreach-Milestone-Plan.docx">
+      <div><div class="doc-name">Venue outreach milestone plan <span class="new-badge">New</span></div><div class="doc-desc">Phased go-to-market plan from first contact to a liquid pilot, with re-plan triggers</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Financial-Model.xlsx">
+      <div><div class="doc-name">Financial model <span class="new-badge">Updated</span></div><div class="doc-desc">36-month model, now with full P&amp;L, Cash Flow Statement and Balance Sheet tabs — every assumption editable</div></div>
+      <div class="doc-type">.xlsx</div>
+    </a>
+    <a class="doc-row" href="Covered-One-Pager.docx">
+      <div><div class="doc-name">One-pager</div><div class="doc-desc">Single page for cold investor outreach</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Product-Spec.docx">
+      <div><div class="doc-name">Product &amp; business spec</div><div class="doc-desc">Full write-up: problem, product, market, roadmap</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Data-Room-Checklist.docx">
+      <div><div class="doc-name">Data room checklist</div><div class="doc-desc">What to assemble before due diligence starts</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Objection-Handling.docx">
+      <div><div class="doc-name">Objection handling</div><div class="doc-desc">Eight hard questions, honestly answered</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="Covered-Privacy-Policy.docx">
+      <div><div class="doc-name">Privacy policy (UK GDPR)</div><div class="doc-desc">Full draft policy \u2014 flagged sections need solicitor sign-off</div></div>
+      <div class="doc-type">.docx</div>
+    </a>
+    <a class="doc-row" href="covered-reliability-scoring-model.md">
+      <div><div class="doc-name">Reliability scoring model</div><div class="doc-desc">The methodology behind the score itself</div></div>
+      <div class="doc-type">.md</div>
+    </a>
+    <a class="doc-row" href="covered-verification-and-data-protection.md">
+      <div><div class="doc-name">Verification &amp; data protection</div><div class="doc-desc">Right-to-work/DBS checks and GDPR handling</div></div>
+      <div class="doc-type">.md</div>
+    </a>
+    <a class="doc-row" href="covered-technical-spec.md">
+      <div><div class="doc-name">Technical specification <span class="new-badge">Updated</span></div><div class="doc-desc">Data models, formulas, state machines and API surface — now with MVP phasing, admin panel spec and data model fixes</div></div>
+      <div class="doc-type">.md</div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  Prototype package for investor review. No real backend, no real users — see "Where we are today" in the pitch deck for an honest status check.
+</footer>
+
+</body>
+</html>

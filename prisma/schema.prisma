@@ -1,0 +1,379 @@
+// Covered — Phase 0 data model.
+// Source of truth: reference/docs/covered-technical-spec.md §1 and §8
+// (§8.3 corrects VenueProfile -> Venue/VenueMember; §8.6 adds the
+// "rejected" verification path; §8.8 adds versioned TermsAcceptance).
+// Do not add fields here that aren't in the spec without updating the
+// spec first — this file and the TS interfaces in §1 must stay in sync.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums --------------------------------------------------------------
+
+enum UserRole {
+  worker
+  venue_admin
+  admin
+}
+
+enum WorkerRole {
+  Bartender
+  WaiterWaitress
+  HeadChef
+  SousChef
+  ChefDePartie
+  CommisChef
+  KitchenPorter
+  EventSteward
+  Housekeeper
+  Barista
+  FrontOfHouseManager
+}
+
+enum ReliabilityTier {
+  rising
+  reliable
+  top_rated
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+enum DbsStatus {
+  pending
+  verified
+  rejected
+  not_required
+}
+
+enum CertType {
+  food_hygiene_l2
+  food_hygiene_l3
+  personal_licence
+  silver_service
+  first_aid
+  sia_badge
+  barista_l1
+  barista_l2
+  cellar_management
+  coshh
+  wine_basics
+  allergen_trained
+}
+
+enum CertStatus {
+  pending
+  verified
+  expired
+}
+
+enum SubscriptionTier {
+  pay_as_you_go
+  growth
+  enterprise
+}
+
+enum VenueMemberRole {
+  owner
+  manager
+  staff
+}
+
+enum ShiftStatus {
+  open
+  offered
+  accepted
+  declined
+  confirmed
+  completed
+  no_show
+  cancelled_by_worker
+  cancelled_by_venue
+}
+
+enum DisputeRaisedBy {
+  worker
+  venue
+}
+
+enum DisputeTargetType {
+  shift_feedback
+  venue_feedback
+}
+
+enum DisputeCheckType {
+  objective
+  subjective
+}
+
+enum DisputeStatus {
+  pending_review
+  resolved_upheld
+  resolved_excluded
+}
+
+enum FeeOption {
+  conversion_fee
+  extended_hire
+}
+
+enum HireRequestStatus {
+  pending_worker_response
+  accepted
+  declined
+}
+
+enum AdminRole {
+  reviewer
+  ops_manager
+  super_admin
+}
+
+// --- Core identity --------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         UserRole
+  createdAt    DateTime @default(now())
+
+  workerProfile     WorkerProfile?
+  venueMemberships  VenueMember[]
+  adminUser         AdminUser?
+  termsAcceptances  TermsAcceptance[]
+
+  @@map("users")
+}
+
+// --- Worker side ------------------------------------------------------------
+
+model WorkerProfile {
+  id                    String              @id @default(uuid())
+  userId                String              @unique
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                  String
+  primaryRole           WorkerRole
+  yearsExperience       Float
+  hourlyRate            Float
+  postcode              String
+  lat                   Float?
+  lng                   Float?
+  maxTravelDistanceMi   Float
+  availability          Json // WeeklyAvailability, see src/lib/types.ts
+  rightToWorkStatus     VerificationStatus  @default(pending)
+  idVerificationStatus  VerificationStatus  @default(pending)
+  dbsStatus             DbsStatus           @default(not_required)
+  reliabilityScore      Float?
+  reliabilityTier       ReliabilityTier     @default(rising)
+  shiftsCompleted       Int                 @default(0)
+  noShows               Int                 @default(0)
+  consentGivenAt        DateTime?
+  bankAccountConnected  Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+
+  certifications  Certification[]
+  shifts          Shift[]
+  favouritedBy    Favourite[]
+  hireRequests    HireRequest[]
+
+  @@map("worker_profiles")
+}
+
+model Certification {
+  id          String        @id @default(uuid())
+  workerId    String
+  worker      WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  type        CertType
+  status      CertStatus    @default(pending)
+  expiryDate  DateTime?
+  verifiedAt  DateTime?
+
+  @@index([workerId])
+  @@map("certifications")
+}
+
+// --- Venue side (corrected multi-user model, spec §8.3) -------------------
+
+model Venue {
+  id                String            @id @default(uuid())
+  name              String
+  postcode          String
+  lat               Float?
+  lng               Float?
+  subscriptionTier  SubscriptionTier  @default(pay_as_you_go)
+  trustScore        Float?
+  trustTier         ReliabilityTier   @default(rising)
+  createdAt         DateTime          @default(now())
+
+  members        VenueMember[]
+  shifts         Shift[]
+  favourites     Favourite[]
+  hireRequests   HireRequest[]
+
+  @@map("venues")
+}
+
+model VenueMember {
+  id         String            @id @default(uuid())
+  venueId    String
+  venue      Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       VenueMemberRole
+  invitedAt  DateTime          @default(now())
+  joinedAt   DateTime?
+
+  @@unique([venueId, userId])
+  @@index([userId])
+  @@map("venue_members")
+}
+
+// --- Booking loop -----------------------------------------------------------
+
+model Shift {
+  id                 String       @id @default(uuid())
+  venueId            String
+  venue              Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  workerId           String?
+  worker             WorkerProfile? @relation(fields: [workerId], references: [id])
+  role               WorkerRole
+  date               DateTime
+  startTime          String
+  endTime            String
+  hourlyRate         Float
+  status             ShiftStatus  @default(open)
+  distanceAtMatchMi  Float?
+  offeredAt          DateTime?
+  respondBy          DateTime?
+  // Set when a worker cancels a confirmed shift inside the notice-period
+  // threshold (spec §3.1) — the flag the reliability score reads to
+  // count it against attendance. A cancellation outside the threshold,
+  // or one initiated by the venue, never sets this and never touches
+  // the score (two-sided accountability, scoring doc §6).
+  lateCancellation   Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+
+  shiftFeedback  ShiftFeedback?
+  venueFeedback  VenueFeedback?
+
+  @@index([venueId])
+  @@index([workerId])
+  @@index([status])
+  @@map("shifts")
+}
+
+model ShiftFeedback {
+  id                   String   @id @default(uuid())
+  shiftId              String   @unique
+  shift                Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  confirmedAttendance  Boolean
+  onTime               Boolean
+  minutesLate          Int?
+  submittedAt          DateTime @default(now())
+
+  @@map("shift_feedback")
+}
+
+model VenueFeedback {
+  id                   String   @id @default(uuid())
+  shiftId              String   @unique
+  shift                Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  paidOnTime           Boolean
+  breaksGiven          Boolean
+  matchedDescription   Boolean
+  comment              String?
+  submittedAt          DateTime @default(now())
+
+  @@map("venue_feedback")
+}
+
+// --- Disputes (human-in-the-loop only, spec §3.2 / §7) --------------------
+
+model Dispute {
+  id           String             @id @default(uuid())
+  raisedBy     DisputeRaisedBy
+  targetType   DisputeTargetType
+  targetId     String
+  reason       String
+  note         String
+  checkType    DisputeCheckType?
+  evidence     String?
+  status       DisputeStatus      @default(pending_review)
+  resolvedAt   DateTime?
+  resolvedBy   String? // AdminUser.id, once a human decides
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt // optimistic concurrency, spec §8.7
+
+  @@index([status])
+  @@index([checkType])
+  @@map("disputes")
+}
+
+// --- Favourites / hire ------------------------------------------------------
+
+model Favourite {
+  id         String        @id @default(uuid())
+  venueId    String
+  venue      Venue         @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  workerId   String
+  worker     WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  createdAt  DateTime      @default(now())
+
+  @@unique([venueId, workerId])
+  @@map("favourites")
+}
+
+model HireRequest {
+  id                        String             @id @default(uuid())
+  venueId                   String
+  venue                     Venue              @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  workerId                  String
+  worker                    WorkerProfile      @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  proposedRoleTitle         String
+  proposedSalary            Float
+  proposedStartDate         DateTime
+  feeOption                 FeeOption
+  feeAmount                 Float?
+  shiftsCompletedAtRequest  Int
+  status                    HireRequestStatus  @default(pending_worker_response)
+  respondedAt               DateTime?
+  createdAt                 DateTime           @default(now())
+
+  @@map("hire_requests")
+}
+
+// --- Admin / ops (spec §8.2) -----------------------------------------------
+
+model AdminUser {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      AdminRole
+  createdAt DateTime   @default(now())
+
+  @@map("admin_users")
+}
+
+// --- Terms acceptance (spec §8.8) -------------------------------------------
+
+model TermsAcceptance {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  termsVersion  String
+  acceptedAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("terms_acceptances")
+}

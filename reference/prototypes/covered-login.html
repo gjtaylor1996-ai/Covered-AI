@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Covered — Log in</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2623; --ink-soft:#3A423E; --steel:#7C8B8A; --steel-light:#B9C2BF;
+    --paper:#E7E1CE; --paper-light:#F2EEE1; --card:#FBF9F2;
+    --amber:#E19A33; --amber-deep:#B9761F; --green:#3F6E52; --line:rgba(31,38,35,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    display:flex;
+    min-height:100vh;
+  }
+  h1,h2,h3{font-family:'Oswald'; text-transform:uppercase; letter-spacing:0.02em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------------- left brand panel ---------------- */
+  .brand-panel{
+    flex:1 1 46%;
+    background:var(--ink);
+    color:var(--paper-light);
+    padding:56px 52px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+    min-width:340px;
+  }
+  .brand-panel::before{
+    content:'';
+    position:absolute; top:-160px; right:-160px;
+    width:420px; height:420px; border-radius:50%;
+    background:#2B332E;
+  }
+  .brand-top{position:relative; z-index:1; display:flex; align-items:center; gap:12px;}
+  .brand-mark{
+    width:40px; height:40px; border-radius:50%; border:2px solid var(--amber);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald'; font-weight:700; font-size:11px; color:var(--amber);
+    transform:rotate(-8deg); flex-shrink:0;
+  }
+  .brand-top span{font-family:'Oswald'; font-size:19px; letter-spacing:0.04em;}
+
+  .brand-mid{position:relative; z-index:1; max-width:420px;}
+  .role-pill-row{display:flex; gap:8px; margin-bottom:22px;}
+  .role-pill{
+    font-family:'IBM Plex Mono'; font-size:10.5px; letter-spacing:0.04em; text-transform:uppercase;
+    padding:6px 12px; border-radius:20px; border:1px solid var(--steel-light); color:var(--steel-light);
+  }
+  .role-pill.active{background:var(--amber); border-color:var(--amber); color:var(--ink); font-weight:600;}
+
+  .brand-headline{font-size:32px; font-weight:700; line-height:1.15; margin:0 0 14px; transition:opacity .18s ease;}
+  .brand-sub{font-size:14px; color:var(--steel-light); line-height:1.6; margin:0; transition:opacity .18s ease;}
+
+  .brand-points{position:relative; z-index:1; margin-top:36px; display:flex; flex-direction:column; gap:14px;}
+  .point{display:flex; gap:12px; align-items:flex-start;}
+  .point-dot{
+    width:26px; height:26px; border-radius:50%; border:1.5px solid var(--amber);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--amber); flex-shrink:0; margin-top:1px;
+  }
+  .point p{margin:0; font-size:12.5px; color:var(--steel-light); line-height:1.5;}
+
+  .brand-foot{position:relative; z-index:1; font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--steel);}
+
+  /* ---------------- right form panel ---------------- */
+  .form-panel{
+    flex:1 1 54%;
+    background:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px 24px;
+  }
+  .form-card{
+    width:100%;
+    max-width:400px;
+  }
+  .tab-row{
+    display:flex; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px; margin-bottom:28px;
+  }
+  .tab-btn{
+    flex:1; text-align:center; padding:10px 8px; border-radius:8px; cursor:pointer;
+    font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; letter-spacing:0.03em;
+    color:var(--steel); user-select:none;
+  }
+  .tab-btn.active{background:var(--ink); color:var(--paper-light);}
+
+  .form-title{font-size:24px; margin:0 0 6px;}
+  .form-sub{font-size:13px; color:var(--steel); margin:0 0 26px; line-height:1.5;}
+
+  .field-group{margin-bottom:16px;}
+  label.field-label{
+    display:block; font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--steel); margin-bottom:6px;
+  }
+  input[type=email], input[type=password], input[type=text]{
+    width:100%; font-family:'IBM Plex Sans'; font-size:14px; padding:11px 13px;
+    border:1.5px solid var(--line); border-radius:8px; background:var(--card); color:var(--ink);
+  }
+  input:focus{outline:none; border-color:var(--amber);}
+
+  .row-between{display:flex; justify-content:space-between; align-items:center; margin:2px 0 22px;}
+  .remember{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--ink-soft);}
+  .remember input{width:14px; height:14px;}
+  .link{color:var(--amber-deep); font-size:12.5px; text-decoration:none; font-weight:600; cursor:pointer;}
+  .link:hover{text-decoration:underline;}
+
+  .submit-btn{
+    width:100%; padding:13px; border:none; border-radius:8px; background:var(--ink); color:var(--paper-light);
+    font-family:'IBM Plex Mono'; font-size:13px; text-transform:uppercase; letter-spacing:0.03em;
+    cursor:pointer; margin-bottom:18px;
+  }
+  .submit-btn:hover{background:var(--amber-deep);}
+
+  .divider{display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--steel); font-size:11px;}
+  .divider::before, .divider::after{content:''; flex:1; height:1px; background:var(--line);}
+
+  .sso-btn{
+    width:100%; padding:11px; border:1.5px solid var(--line); border-radius:8px; background:var(--card);
+    color:var(--ink); font-size:13px; display:flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; margin-bottom:10px;
+  }
+  .sso-btn:hover{border-color:var(--steel);}
+
+  .foot-line{text-align:center; font-size:13px; color:var(--ink-soft); margin-top:22px;}
+
+  .error-box{
+    display:none;
+    background:rgba(176,70,58,0.1); border:1px solid rgba(176,70,58,0.4); color:#8A392E;
+    border-radius:8px; padding:10px 12px; font-size:12.5px; margin-bottom:16px;
+  }
+  .error-box.show{display:block;}
+
+  @media (max-width:820px){
+    body{flex-direction:column;}
+    .brand-panel{padding:32px 26px; min-height:auto;}
+    .brand-headline{font-size:24px;}
+    .brand-points{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="brand-panel">
+  <div class="brand-top">
+    <div class="brand-mark">AI</div>
+    <span>COVERED</span>
+  </div>
+
+  <div class="brand-mid">
+    <div class="role-pill-row">
+      <div class="role-pill active" id="pill-candidate">For candidates</div>
+      <div class="role-pill" id="pill-client">For venues</div>
+    </div>
+    <h1 class="brand-headline" id="brand-headline">Every shift, covered.</h1>
+    <p class="brand-sub" id="brand-sub">Sign in to manage your shifts, your reliability score, and where you're available to work.</p>
+  </div>
+
+  <div class="brand-points" id="brand-points">
+    <div class="point"><div class="point-dot">◎</div><p>See your full Reliability Score breakdown, not just the headline number.</p></div>
+    <div class="point"><div class="point-dot">▤</div><p>Set your availability and travel radius — you're never shown shifts outside them.</p></div>
+    <div class="point"><div class="point-dot">£</div><p>Get paid automatically after every completed shift.</p></div>
+  </div>
+
+  <div class="brand-foot">Covered · Product concept</div>
+</div>
+
+<div class="form-panel">
+  <div class="form-card">
+    <div class="tab-row">
+      <div class="tab-btn active" id="tab-candidate" onclick="setRole('candidate')">Candidate</div>
+      <div class="tab-btn" id="tab-client" onclick="setRole('client')">Client / venue</div>
+    </div>
+
+    <h2 class="form-title" id="form-title">Welcome back</h2>
+    <p class="form-sub" id="form-sub">Log in to see your shifts, availability and reliability score.</p>
+
+    <div class="error-box" id="error-box">Enter both an email and a password to continue.</div>
+
+    <form id="login-form" onsubmit="return handleSubmit(event)">
+      <div class="field-group">
+        <label class="field-label" id="email-label">Email</label>
+        <input type="email" id="in-email" placeholder="you@example.com" autocomplete="username">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input type="password" id="in-password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="row-between">
+        <label class="remember"><input type="checkbox" checked> Remember me</label>
+        <span class="link">Forgot password?</span>
+      </div>
+      <button type="submit" class="submit-btn" id="submit-btn">Log in</button>
+    </form>
+
+    <div class="divider">OR</div>
+    <div class="sso-btn">Continue with Google</div>
+    <div class="sso-btn" id="sso-second">Continue with phone number</div>
+
+    <p class="foot-line" id="foot-line">New to Covered? <span class="link" id="signup-link" onclick="goToSignup()">Apply as a worker</span></p>
+  </div>
+</div>
+
+<script>
+let currentRole = 'candidate';
+
+const copy = {
+  candidate: {
+    headline: "Every shift, covered.",
+    sub: "Sign in to manage your shifts, your reliability score, and where you're available to work.",
+    formTitle: "Welcome back",
+    formSub: "Log in to see your shifts, availability and reliability score.",
+    emailLabel: "Email",
+    ssoSecond: "Continue with phone number",
+    footLine: "New to Covered?",
+    signupText: "Apply as a worker",
+    points: [
+      ["◎", "See your full Reliability Score breakdown, not just the headline number."],
+      ["▤", "Set your availability and travel radius — you're never shown shifts outside them."],
+      ["£", "Get paid automatically after every completed shift."],
+    ]
+  },
+  client: {
+    headline: "Fill shifts with people you can trust.",
+    sub: "Sign in to search, filter and book verified hospitality staff by reliability, distance, experience and role.",
+    formTitle: "Venue login",
+    formSub: "Log in to search candidates and manage your bookings.",
+    emailLabel: "Work email",
+    ssoSecond: "Continue with SSO",
+    footLine: "New venue?",
+    signupText: "Set up a venue account",
+    points: [
+      ["✓", "Every match comes with a plain-language reason, not a black-box ranking."],
+      ["📍", "Filter by real distance, not just postcode — see who can actually get there."],
+      ["🛡", "Every profile is verified before it's ever shown to you."],
+    ]
+  }
+};
+
+function setRole(role){
+  currentRole = role;
+  document.getElementById('tab-candidate').classList.toggle('active', role==='candidate');
+  document.getElementById('tab-client').classList.toggle('active', role==='client');
+  document.getElementById('pill-candidate').classList.toggle('active', role==='candidate');
+  document.getElementById('pill-client').classList.toggle('active', role==='client');
+
+  const c = copy[role];
+  document.getElementById('brand-headline').textContent = c.headline;
+  document.getElementById('brand-sub').textContent = c.sub;
+  document.getElementById('form-title').textContent = c.formTitle;
+  document.getElementById('form-sub').textContent = c.formSub;
+  document.getElementById('email-label').textContent = c.emailLabel;
+  document.getElementById('sso-second').textContent = c.ssoSecond;
+  document.getElementById('signup-link').textContent = c.signupText;
+  document.getElementById('foot-line').firstChild.textContent = c.footLine + ' ';
+
+  const pointsWrap = document.getElementById('brand-points');
+  pointsWrap.innerHTML = c.points.map(p => `
+    <div class="point"><div class="point-dot">${p[0]}</div><p>${p[1]}</p></div>
+  `).join('');
+
+  document.getElementById('error-box').classList.remove('show');
+}
+
+document.getElementById('pill-candidate').addEventListener('click', ()=>setRole('candidate'));
+document.getElementById('pill-client').addEventListener('click', ()=>setRole('client'));
+
+function goToSignup(){
+  if(currentRole === 'candidate'){
+    window.location.href = 'covered-worker-onboarding.html';
+  } else {
+    alert('Venue self-signup isn\'t built in this prototype yet — the client dashboard (covered.html) assumes an existing venue account.');
+  }
+}
+
+function handleSubmit(e){
+  e.preventDefault();
+  const email = document.getElementById('in-email').value.trim();
+  const pw = document.getElementById('in-password').value;
+  const errBox = document.getElementById('error-box');
+  if(!email || !pw){
+    errBox.textContent = 'Enter both an email and a password to continue.';
+    errBox.classList.add('show');
+    return false;
+  }
+  errBox.classList.remove('show');
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Logging in…';
+  setTimeout(()=>{
+    btn.textContent = currentRole === 'candidate' ? 'Redirecting to your shifts…' : 'Redirecting to your dashboard…';
+    setTimeout(()=>{
+      window.location.href = currentRole === 'candidate' ? 'covered-candidate-app.html' : 'covered.html';
+    }, 500);
+  }, 700);
+  return false;
+}
+</script>
+</body>
+</html>

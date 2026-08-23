@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Covered — Connected demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2623; --ink-soft:#3A423E; --steel:#7C8B8A; --steel-light:#B9C2BF;
+    --paper:#E7E1CE; --paper-light:#F2EEE1; --card:#FBF9F2;
+    --amber:#E19A33; --amber-deep:#B9761F; --green:#3F6E52; --line:rgba(31,38,35,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif;}
+  h1,h2,h3{font-family:'Oswald'; text-transform:uppercase; letter-spacing:0.02em;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---- top switcher ---- */
+  .top{background:var(--ink); color:var(--paper-light); padding:16px 24px; border-bottom:4px solid var(--amber); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;}
+  .top-brand{display:flex; align-items:center; gap:10px;}
+  .top-brand .dot{width:32px; height:32px; border-radius:50%; border:2px solid var(--amber); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--amber);}
+  .top-brand span{font-family:'Oswald'; font-size:18px;}
+  .tabs{display:flex; gap:8px;}
+  .tab-btn{
+    font-family:'IBM Plex Mono'; font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em;
+    padding:9px 16px; border-radius:20px; border:1.5px solid var(--steel-light); background:transparent;
+    color:var(--paper-light); cursor:pointer;
+  }
+  .tab-btn.active{background:var(--amber); border-color:var(--amber); color:var(--ink);}
+
+  .note-strip{
+    background:#DED5B8; padding:10px 24px; font-size:12px; color:#5A5340; text-align:center;
+  }
+
+  .panel{display:none; max-width:1100px; margin:0 auto; padding:28px 24px 60px;}
+  .panel.active{display:block;}
+
+  /* ---- dashboard ---- */
+  .filters{
+    display:flex; gap:18px; align-items:flex-end; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:22px;
+  }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--steel);}
+  select{font-family:'IBM Plex Sans'; font-size:13px; padding:7px 10px; border:1px solid var(--ink); border-radius:6px; background:var(--paper-light); color:var(--ink); min-width:160px;}
+  input[type=range]{width:150px;}
+  .count-pill{margin-left:auto; font-family:'IBM Plex Mono'; font-size:12.5px; background:var(--paper-light); border:1px solid var(--ink); border-radius:20px; padding:7px 14px;}
+  .reset-btn{
+    font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--steel); background:none; border:1px dashed var(--steel); border-radius:20px; padding:6px 12px; cursor:pointer;
+  }
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:16px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; display:flex; flex-direction:column; gap:10px;}
+  .card.pending{border:1.5px dashed var(--amber-deep);}
+  .card-top{display:flex; justify-content:space-between; gap:10px;}
+  .who{display:flex; gap:10px; align-items:center;}
+  .avatar{width:40px; height:40px; border-radius:50%; background:var(--ink); color:var(--paper-light); display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-size:13px;}
+  .name{font-size:15px; font-weight:600; margin:0;}
+  .role{font-size:11.5px; color:var(--steel);}
+  .stamp{width:50px; height:50px; border-radius:50%; border:2px solid; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-8deg); flex-shrink:0;}
+  .stamp .score{font-family:'IBM Plex Mono'; font-weight:600; font-size:14px;}
+  .stamp .tier{font-family:'IBM Plex Mono'; font-size:6.5px; text-transform:uppercase;}
+  .stamp.gold{color:var(--green); border-color:var(--green);}
+  .stamp.amber{color:var(--amber-deep); border-color:var(--amber-deep);}
+  .stamp.rising{color:var(--steel); border-color:var(--steel);}
+  .meta-row{display:flex; gap:12px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-soft);}
+  .meta b{font-family:'IBM Plex Mono'; color:var(--ink);}
+  .pending-note{font-size:11px; color:var(--amber-deep); background:rgba(225,154,51,0.12); border-radius:6px; padding:8px 10px;}
+  .why{font-size:11px; color:var(--steel); border-top:1px dashed var(--line); padding-top:8px;}
+  .empty{grid-column:1/-1; text-align:center; padding:40px; color:var(--steel); font-family:'IBM Plex Mono'; font-size:13px;}
+
+  /* ---- onboarding (compressed, single column, no phone frame) ---- */
+  .ob-wrap{max-width:520px; margin:0 auto; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .ob-head{background:var(--ink); color:var(--paper-light); padding:16px 22px; border-bottom:3px solid var(--amber);}
+  .progress-track{display:flex; gap:5px; margin-top:10px;}
+  .progress-seg{flex:1; height:4px; border-radius:3px; background:rgba(242,238,225,0.18);}
+  .progress-seg.done{background:var(--amber);}
+  .ob-body{padding:22px;}
+  .step-title{font-size:19px; margin:0 0 6px;}
+  .step-sub{font-size:12.5px; color:var(--steel); line-height:1.5; margin:0 0 18px;}
+  .field-group{margin-bottom:14px;}
+  label.field-label{display:block; font-family:'IBM Plex Mono'; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--steel); margin-bottom:6px;}
+  input[type=text], input[type=tel]{width:100%; font-size:14px; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--paper-light); color:var(--ink);}
+  .role-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .role-chip{padding:11px 8px; border:1.5px solid var(--line); border-radius:8px; text-align:center; font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; background:var(--paper-light);}
+  .role-chip.selected{border-color:var(--amber); background:rgba(225,154,51,0.12); color:var(--amber-deep);}
+  .cert-item{display:flex; justify-content:space-between; align-items:center; background:var(--paper-light); border:1px solid var(--line); border-radius:10px; padding:11px 14px; margin-bottom:8px;}
+  .upload-btn{font-family:'IBM Plex Mono'; font-size:10.5px; padding:6px 12px; border-radius:20px; border:1.5px solid var(--ink); background:transparent; color:var(--ink); cursor:pointer;}
+  .upload-btn.done{border-color:var(--green); color:var(--green); background:rgba(63,110,82,0.1);}
+  .consent-box{display:flex; gap:10px; align-items:flex-start; background:var(--paper-light); border:1px dashed var(--line); border-radius:10px; padding:12px 14px; margin-top:14px;}
+  .consent-box p{font-size:11.5px; color:var(--ink-soft); margin:0; line-height:1.5;}
+  .navbar{display:flex; gap:10px; padding:16px 22px; border-top:1px solid var(--line);}
+  .btn{flex:1; text-align:center; padding:11px; border-radius:8px; font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; cursor:pointer; border:1.5px solid var(--ink);}
+  .btn.ghost{background:transparent; color:var(--ink);}
+  .btn.primary{background:var(--ink); color:var(--paper-light);}
+  .btn.disabled{opacity:0.4; pointer-events:none;}
+  .success-wrap{text-align:center; padding:20px 10px;}
+  .success-stamp{width:80px; height:80px; border-radius:50%; border:2px solid var(--steel); margin:0 auto 16px; display:flex; align-items:center; justify-content:center; transform:rotate(-8deg);}
+  .success-stamp span{font-family:'IBM Plex Mono'; font-size:9px; text-transform:uppercase; color:var(--steel);}
+  .success-wrap h2{font-size:19px; margin:0 0 8px;}
+  .success-wrap p{font-size:13px; color:var(--ink-soft); line-height:1.6; max-width:340px; margin:0 auto 14px;}
+  .go-dash-btn{font-family:'IBM Plex Mono'; font-size:12px; text-transform:uppercase; background:var(--amber); color:var(--ink); border:none; padding:11px 20px; border-radius:8px; cursor:pointer;}
+  .loading{text-align:center; padding:30px; color:var(--steel); font-family:'IBM Plex Mono'; font-size:12px;}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-brand"><div class="dot">AI</div><span>Covered — connected demo</span></div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dash">Client dashboard</button>
+    <button class="tab-btn" data-tab="onboard">Worker onboarding</button>
+    <a href="index.html" style="color:#B9C2BF; text-decoration:none; font-family:'IBM Plex Mono'; font-size:11px; align-self:center; margin-left:6px; border:1px solid #7C8B8A; border-radius:20px; padding:9px 16px;">← Hub</a>
+  </div>
+</div>
+<div class="note-strip">Submissions here are saved in this browser's local storage, so they'll still be here next time you reload on this device — but they won't appear on a different computer or for a different visitor. This simulates a real shared backend; it isn't one.</div>
+
+<!-- DASHBOARD PANEL -->
+<div class="panel active" id="panel-dash">
+  <div class="filters">
+    <div class="field"><label>Role</label>
+      <select id="f-role"><option value="all">All roles</option></select>
+    </div>
+    <div class="field"><label>Max distance — <span id="v-distance">20 mi</span></label>
+      <input type="range" id="f-distance" min="1" max="30" value="20">
+    </div>
+    <div class="field"><label>Include pending / unverified</label>
+      <select id="f-pending"><option value="yes">Show them</option><option value="no">Hide them</option></select>
+    </div>
+    <div class="count-pill"><b id="v-count">0</b> candidates</div>
+    <button class="reset-btn" id="clear-btn">Clear submitted demo data</button>
+  </div>
+  <div class="grid" id="grid"><div class="loading">Loading candidates…</div></div>
+</div>
+
+<!-- ONBOARDING PANEL -->
+<div class="panel" id="panel-onboard">
+  <div class="ob-wrap">
+    <div class="ob-head">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <strong>Join as a worker</strong>
+        <span class="mono" style="font-size:11px; color:#B9C2BF;"><span id="step-current">1</span> / 4</span>
+      </div>
+      <div class="progress-track" id="progress-track"></div>
+    </div>
+    <div class="ob-body">
+
+      <div class="ob-view active" data-step="1">
+        <div class="step-title">Basics</div>
+        <p class="step-sub">This is what venues will see first.</p>
+        <div class="field-group"><label class="field-label">Full name</label><input type="text" id="in-name" placeholder="e.g. Jordan Blake"></div>
+        <div class="field-group"><label class="field-label">Phone</label><input type="tel" placeholder="07…"></div>
+        <div class="field-group">
+          <label class="field-label">Primary role</label>
+          <div class="role-grid" id="role-grid">
+            <div class="role-chip">Bartender</div><div class="role-chip">Waiter/Waitress</div>
+            <div class="role-chip">Chef</div><div class="role-chip">Sous Chef</div>
+            <div class="role-chip">Chef de Partie</div><div class="role-chip">Commis Chef</div>
+            <div class="role-chip">Kitchen Porter</div>
+            <div class="role-chip">Event Steward</div><div class="role-chip">Barista</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ob-view" data-step="2">
+        <div class="step-title">Location & experience</div>
+        <p class="step-sub">Distance here is illustrative for this demo — a real build geocodes your postcode against each venue.</p>
+        <div class="field-group"><label class="field-label">Postcode</label><input type="text" id="in-postcode" placeholder="e.g. SE1 9GY"></div>
+        <div class="field-group">
+          <label class="field-label">Years of experience</label>
+          <select id="in-exp">
+            <option value="0">Less than 1 year</option>
+            <option value="2" selected>1–2 years</option>
+            <option value="4">3–5 years</option>
+            <option value="8">6–10 years</option>
+            <option value="12">10+ years</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ob-view" data-step="3">
+        <div class="step-title">Certifications & consent</div>
+        <p class="step-sub">Upload what you have — each is checked against the issuing body.</p>
+        <div class="cert-item"><span>Level 2 Food Hygiene</span><button class="upload-btn" onclick="markUploaded(this)">Upload</button></div>
+        <div class="cert-item"><span>Personal Licence</span><button class="upload-btn" onclick="markUploaded(this)">Upload</button></div>
+        <div class="consent-box">
+          <input type="checkbox" id="consent-check">
+          <p>I consent to Covered verifying my identity, right to work and certifications, and understand my shift history will feed my Reliability Score.</p>
+        </div>
+      </div>
+
+      <div class="ob-view" data-step="success">
+        <div class="success-wrap">
+          <div class="success-stamp"><span>Rising</span></div>
+          <h2>You're in — verification underway</h2>
+          <p>Your profile is now visible to venues as <b>pending verification</b>. It'll show as fully bookable once checks complete.</p>
+          <button class="go-dash-btn" onclick="goToDashAndRefresh()">View me in the client dashboard →</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="navbar" id="navbar">
+      <div class="btn ghost" id="btn-back" onclick="obGo(-1)">Back</div>
+      <div class="btn primary" id="btn-next" onclick="obGo(1)">Continue</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- shared seed data ---------------- */
+const SEED_CANDIDATES = [
+  {id:"seed-1", name:"Maya Okafor", role:"Bartender", distance:2.1, experience:6, reliability:97, source:"seed"},
+  {id:"seed-2", name:"Tomasz Wiśniewski", role:"Chef", distance:8.4, experience:11, reliability:93, source:"seed"},
+  {id:"seed-3", name:"Priya Nair", role:"Waiter/Waitress", distance:1.3, experience:2, reliability:88, source:"seed"},
+  {id:"seed-4", name:"Jack Sullivan", role:"Kitchen Porter", distance:4.7, experience:1, reliability:71, source:"seed"},
+  {id:"seed-5", name:"Elena Marchetti", role:"Event Steward", distance:12.9, experience:5, reliability:95, source:"seed"},
+  {id:"seed-6", name:"Aiden Clarke", role:"Barista", distance:0.9, experience:3, reliability:90, source:"seed"},
+  {id:"seed-7", name:"Oliver Bennett", role:"Sous Chef", distance:5.3, experience:7, reliability:94, source:"seed"},
+  {id:"seed-8", name:"Amara Chukwu", role:"Commis Chef", distance:3.8, experience:1, reliability:80, source:"seed"},
+  {id:"seed-9", name:"Noah Whitfield", role:"Chef de Partie", distance:6.7, experience:4, reliability:87, source:"seed"},
+];
+
+function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
+function pseudoDistance(postcode){
+  let h = 0;
+  for(const c of (postcode||"XX")) h = (h*31 + c.charCodeAt(0)) >>> 0;
+  return (h % 20) + 1;
+}
+function tierOf(c){
+  if(c.pending) return {cls:'rising', label:'Pending'};
+  if(c.reliability>=93) return {cls:'gold', label:'Top rated'};
+  if(c.reliability>=80) return {cls:'amber', label:'Reliable'};
+  return {cls:'rising', label:'Rising'};
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'dash') renderDashboard();
+  });
+});
+function goToDashAndRefresh(){
+  document.querySelector('.tab-btn[data-tab="dash"]').click();
+}
+
+/* ---------------- dashboard: storage + render ---------------- */
+const roleSelect = document.getElementById('f-role');
+const roles = [...new Set(SEED_CANDIDATES.map(c=>c.role))].sort();
+roles.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; roleSelect.appendChild(o); });
+
+// Uses localStorage with a small ID index, since localStorage has no native "list by prefix".
+// Scope is per-browser/device — this makes the demo work once hosted on a real domain,
+// but it no longer simulates data being shared across different people's browsers.
+const CANDIDATE_INDEX_KEY = 'covered_candidate_ids';
+
+function getCandidateIds(){
+  try{
+    const raw = localStorage.getItem(CANDIDATE_INDEX_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ console.error('index read failed', e); return []; }
+}
+function saveCandidateIds(ids){
+  try{ localStorage.setItem(CANDIDATE_INDEX_KEY, JSON.stringify(ids)); }
+  catch(e){ console.error('index write failed', e); }
+}
+
+function loadSubmitted(){
+  try{
+    const ids = getCandidateIds();
+    const out = [];
+    for(const id of ids){
+      try{
+        const raw = localStorage.getItem('covered_candidate_' + id);
+        if(raw) out.push(JSON.parse(raw));
+      }catch(e){ /* skip unreadable entry */ }
+    }
+    return out;
+  }catch(e){ console.error('load failed', e); return []; }
+}
+
+async function renderDashboard(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '<div class="loading">Loading candidates…</div>';
+
+  const submitted = await loadSubmitted();
+  const all = [...SEED_CANDIDATES, ...submitted];
+
+  // refresh role filter with any new roles from submissions
+  const allRoles = [...new Set(all.map(c=>c.role))].sort();
+  const currentVal = roleSelect.value;
+  roleSelect.innerHTML = '<option value="all">All roles</option>';
+  allRoles.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; roleSelect.appendChild(o); });
+  roleSelect.value = allRoles.includes(currentVal) ? currentVal : 'all';
+
+  const role = roleSelect.value;
+  const maxDist = parseFloat(document.getElementById('f-distance').value);
+  const showPending = document.getElementById('f-pending').value === 'yes';
+
+  let list = all.filter(c =>
+    (role==='all' || c.role===role) &&
+    c.distance<=maxDist &&
+    (showPending || !c.pending)
+  );
+
+  document.getElementById('v-count').textContent = list.length;
+  grid.innerHTML = '';
+
+  if(list.length===0){
+    grid.innerHTML = '<div class="empty">No candidates match these filters yet.</div>';
+    return;
+  }
+
+  list.forEach(c=>{
+    const tier = tierOf(c);
+    const card = document.createElement('div');
+    card.className = 'card' + (c.pending ? ' pending' : '');
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="who">
+          <div class="avatar">${initials(c.name)}</div>
+          <div><p class="name">${c.name}</p><div class="role">${c.role}</div></div>
+        </div>
+        <div class="stamp ${tier.cls}">
+          <div class="score">${c.pending ? '—' : c.reliability}</div>
+          <div class="tier">${tier.label}</div>
+        </div>
+      </div>
+      <div class="meta-row">
+        <div class="meta">📍 <b>${c.distance} mi</b></div>
+        <div class="meta">⏱ <b>${c.experience}</b> yrs exp.</div>
+      </div>
+      ${c.pending
+        ? `<div class="pending-note">Submitted via worker onboarding — awaiting identity, right-to-work and certification checks. Not yet bookable.</div>`
+        : `<div class="why">${c.experience} yrs experience, ${c.distance} mi away, ${c.reliability}/100 reliability from shift history.</div>`}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+document.getElementById('f-role').addEventListener('change', renderDashboard);
+document.getElementById('f-pending').addEventListener('change', renderDashboard);
+document.getElementById('f-distance').addEventListener('input', (e)=>{
+  document.getElementById('v-distance').textContent = e.target.value + ' mi';
+  renderDashboard();
+});
+document.getElementById('clear-btn').addEventListener('click', ()=>{
+  try{
+    const ids = getCandidateIds();
+    ids.forEach(id => localStorage.removeItem('covered_candidate_' + id));
+    localStorage.removeItem(CANDIDATE_INDEX_KEY);
+    renderDashboard();
+  }catch(e){ console.error('clear failed', e); }
+});
+
+/* ---------------- onboarding ---------------- */
+const totalSteps = 3;
+let obCurrent = 1;
+let selectedRole = null;
+let certsUploaded = 0;
+
+const track = document.getElementById('progress-track');
+for(let i=0;i<totalSteps;i++){ const seg=document.createElement('div'); seg.className='progress-seg'; track.appendChild(seg); }
+
+document.querySelectorAll('.role-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.role-chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    selectedRole = chip.textContent;
+  });
+});
+function markUploaded(btn){ btn.textContent='Uploaded ✓'; btn.classList.add('done'); certsUploaded++; }
+
+function updateObProgress(){
+  document.querySelectorAll('.progress-seg').forEach((seg,i)=>seg.classList.toggle('done', i<obCurrent));
+  document.getElementById('step-current').textContent = Math.min(obCurrent, totalSteps);
+}
+function showObStep(step){
+  document.querySelectorAll('.ob-view').forEach(v=>v.classList.remove('active'));
+  document.querySelector(`.ob-view[data-step="${step}"]`).classList.add('active');
+  updateObProgress();
+  const nav = document.getElementById('navbar');
+  if(step === 'success'){ nav.style.display='none'; return; }
+  nav.style.display='flex';
+  document.getElementById('btn-back').classList.toggle('disabled', step===1);
+  document.getElementById('btn-next').textContent = step===totalSteps ? 'Submit application' : 'Continue';
+}
+
+async function obGo(dir){
+  if(dir===1 && obCurrent===totalSteps){
+    await submitApplication();
+    showObStep('success');
+    return;
+  }
+  obCurrent += dir;
+  if(obCurrent<1) obCurrent=1;
+  if(obCurrent>totalSteps) obCurrent=totalSteps;
+  showObStep(obCurrent);
+}
+
+function submitApplication(){
+  const name = document.getElementById('in-name').value.trim() || 'New applicant';
+  const postcode = document.getElementById('in-postcode').value.trim();
+  const exp = parseInt(document.getElementById('in-exp').value, 10) || 0;
+  const id = 'sub-' + Date.now();
+  const candidate = {
+    id, name,
+    role: selectedRole || 'Waiter/Waitress',
+    distance: pseudoDistance(postcode),
+    experience: exp,
+    reliability: null,
+    pending: true,
+    certsUploaded,
+    consent: document.getElementById('consent-check').checked,
+    source: 'onboarding',
+    submittedAt: new Date().toISOString()
+  };
+  try{
+    localStorage.setItem('covered_candidate_' + id, JSON.stringify(candidate));
+    const ids = getCandidateIds();
+    ids.push(id);
+    saveCandidateIds(ids);
+  }catch(e){ console.error('submit failed', e); }
+}
+
+showObStep(obCurrent);
+renderDashboard();
+</script>
+</body>
+</html>

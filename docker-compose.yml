@@ -1,0 +1,19 @@
+# Local Postgres for development only. Staging and production should be
+# managed Postgres instances (e.g. RDS, Supabase, Railway, Neon) with
+# their own DATABASE_URL — never point them at this container.
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: covered
+      POSTGRES_PASSWORD: covered
+      POSTGRES_DB: covered_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - covered_pg_data:/var/lib/postgresql/data
+
+volumes:
+  covered_pg_data:
