@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 
 // Resolves "me" for venue-scoped actions via the requesting user's
 // VenueMember row, per spec §8.3 — Venue has no direct userId field.
@@ -23,4 +24,20 @@ export function canPostShifts(role: "owner" | "manager" | "staff"): boolean {
 
 export async function getWorkerProfile(userId: string) {
   return db.workerProfile.findUnique({ where: { userId } });
+}
+
+export async function getAdminUser(userId: string) {
+  return db.adminUser.findUnique({ where: { userId } });
+}
+
+/** Spec §8.2: every admin action writes who/what/when/why. */
+export async function writeAuditLog(params: {
+  adminId: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  reason: string;
+  metadata?: Prisma.InputJsonValue;
+}) {
+  return db.adminAuditLog.create({ data: params });
 }

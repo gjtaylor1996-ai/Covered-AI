@@ -3,6 +3,8 @@
 // from env so values can change per environment without a redeploy —
 // never hardcode a commission % or fee threshold in application code.
 
+import type { WorkerRoleKey } from "@/lib/types";
+
 function envFloat(name: string, fallback: number): number {
   const raw = process.env[name];
   if (raw === undefined || raw === "") return fallback;
@@ -70,6 +72,20 @@ export function getBusinessRules() {
       // spec says confidence "scales toward 1.0 as shift count grows"
       // (§3) without giving a target count.
       confidenceSaturationShifts: envInt("CONFIDENCE_SATURATION_SHIFTS", 30),
+    },
+
+    // Verification, spec §8.6 / verification doc §1. DBS checks are
+    // "only for roles requiring it, e.g. some event or hotel security
+    // roles" — the spec never pins down which WorkerRole values that
+    // means, so it's configurable rather than a guess baked into logic.
+    // resubmissionCooldownHours implements §8.6's "rate-limited... to
+    // discourage repeated low-quality submissions" without a specific
+    // number given.
+    verification: {
+      requiresDbsRoles: (process.env.REQUIRES_DBS_ROLES?.split(",").filter(Boolean) as
+        | WorkerRoleKey[]
+        | undefined) ?? ["EventSteward"],
+      resubmissionCooldownHours: envInt("VERIFICATION_RESUBMISSION_COOLDOWN_HOURS", 24),
     },
   };
 }

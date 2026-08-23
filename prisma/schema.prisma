@@ -202,6 +202,24 @@ model WorkerProfile {
   stripeConnectAccountId String?            @unique
   createdAt             DateTime            @default(now())
 
+  // Not in spec §1 — Phase 4 (§8.1) needs somewhere to keep the
+  // provider-specific state and submission timestamps behind the three
+  // VerificationStatus fields above. idVerification goes through Onfido
+  // (real API, self-serve sandbox). rightToWork and dbs have no
+  // self-serve API in the real world — the Home Office RTW check is a
+  // manual gov.uk share-code lookup, and DBS checks require a registered
+  // umbrella-body relationship — so both stay "worker submits, admin
+  // confirms" per the verification doc's data (§1) and CLAUDE.md's
+  // allowance for partly-manual verification during a pilot.
+  onfidoApplicantId          String?   @unique
+  onfidoCheckId               String?
+  idVerificationSubmittedAt   DateTime?
+  rightToWorkShareCode        String?
+  rightToWorkDob               DateTime?
+  rightToWorkSubmittedAt      DateTime?
+  dbsApplicationRef           String?
+  dbsSubmittedAt               DateTime?
+
   certifications  Certification[]
   shifts          Shift[]
   favouritedBy    Favourite[]
@@ -412,6 +430,24 @@ model AdminUser {
   createdAt DateTime   @default(now())
 
   @@map("admin_users")
+}
+
+// Not in spec §1 — spec §8.2 requires every admin action write "an audit
+// log entry (who, what, when, why)"; this is that log, scoped to what
+// Phase 4 actually needs (verification overrides). The full admin panel
+// (dispute resolution, account suspension) is Phase 5.
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String   // AdminUser.id
+  action     String
+  targetType String
+  targetId   String
+  reason     String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@map("admin_audit_log")
 }
 
 // --- Terms acceptance (spec §8.8) -------------------------------------------

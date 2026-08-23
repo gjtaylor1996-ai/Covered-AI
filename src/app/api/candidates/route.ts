@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
+import { getBusinessRules } from "@/config/business-rules";
 import type { WorkerRoleKey } from "@/lib/types";
 
 // Spec §4: role, maxDistance, minExperience, minReliability, sort.
@@ -33,9 +34,14 @@ export async function GET(request: NextRequest) {
         ? { yearsExperience: { gte: Number.parseFloat(minExperience) } }
         : {}),
       // A rejected right-to-work or ID check blocks a worker from every
-      // search result, full stop — spec §8.6.
+      // search result, full stop — spec §8.6. A rejected DBS only
+      // blocks roles that actually require one, not the whole profile.
       rightToWorkStatus: { not: "rejected" },
       idVerificationStatus: { not: "rejected" },
+      NOT: {
+        dbsStatus: "rejected",
+        primaryRole: { in: getBusinessRules().verification.requiresDbsRoles },
+      },
     },
     orderBy: { yearsExperience: "desc" },
     select: {

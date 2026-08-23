@@ -7,19 +7,23 @@ parent Downloads folder) for the full build brief and phasing rationale.
 This is a fresh codebase — `reference/prototypes/*.html` are the click-through
 UI/UX mockups that informed the design; they are not extended in place.
 
-## Status: Phase 3 — Payments
+## Status: Phase 4 — Verification
 
 Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop),
-Phase 2 (Reliability Score / Venue Trust Score, two-way feedback), and
-Phase 3 (Stripe Connect payments) are built. Phase 3 is **code-complete
-but not live-tested** — it needs a real Stripe account, which only you
-can create (see "Stripe setup" below). Everything through Phase 2 is
-verified against a live database in the browser, not just typechecked;
-see `src/lib/scoring.ts` and `src/lib/venue-trust.ts` for the
-interpretation notes on two spec ambiguities that surfaced
-(venue_confirmation_rate vs. attendance_rate_weighted sharing one
-underlying field, and the "late cancellation" tier vs. §3.1's binary
-4-hour rule).
+Phase 2 (Reliability Score / Venue Trust Score), Phase 3 (Stripe Connect
+payments), and Phase 4 (ID/right-to-work/DBS verification) are built.
+Phase 3 is **code-complete but not live-tested** — it needs a real
+Stripe account, which only you can create (see "Stripe setup" below).
+Phase 4's ID verification (Onfido) is the same situation — code-complete,
+needs your own Onfido test account (see "Onfido setup" below). Phase 4's
+right-to-work and DBS checks are **verified live** in the browser, since
+they don't depend on any external account — see "Admin-assisted
+verification" below for why. Everything through Phase 2 is verified
+against a live database in the browser, not just typechecked; see
+`src/lib/scoring.ts` and `src/lib/venue-trust.ts` for the interpretation
+notes on two spec ambiguities that surfaced (venue_confirmation_rate vs.
+attendance_rate_weighted sharing one underlying field, and the
+"late cancellation" tier vs. §3.1's binary 4-hour rule).
 
 What's here:
 - **Auth** — email/password signup, login, logout via `/api/auth/*`,
@@ -66,12 +70,55 @@ What's here:
   handlers do a best-effort sync too, in case the user closes the tab).
   None of this is in the spec's original API surface (§4) — it's the
   minimum needed to make "money actually moves" (§8.1) true.
+- **Verification** — spec §8.1 Phase 4. ID verification runs through
+  Onfido (`src/lib/onfido.ts`): a worker uploads a photo ID and a selfie
+  via plain multipart upload (no Onfido SDK embedded, same
+  dependency-free approach as Stripe), Onfido runs document + facial
+  similarity checks, and `POST /api/webhooks/onfido` resolves
+  `idVerificationStatus` — "clear" verifies, anything else (including
+  Onfido's own "consider" result) stays pending for a human to look at,
+  rather than auto-rejecting a possible false negative. Right to work
+  and DBS checks have **no self-serve API in the real world** — see
+  "Admin-assisted verification" below — so a worker submits their
+  gov.uk share code or DBS application reference
+  (`/api/workers/me/verification/{right-to-work,dbs}`) and it sits at
+  "pending" until an admin confirms it via
+  `POST /api/admin/verification/[workerId]/override`, logged to
+  `AdminAuditLog` with who/what/when/why per spec §8.2. The admin queue
+  UI is at `/admin/verification`; bootstrap an admin with
+  `npm run admin:create -- <email> <password> [role]` since there's no
+  public admin signup. A rejected right-to-work/ID check blocks a worker
+  from every search result; a rejected DBS only blocks roles that
+  actually require one (`REQUIRES_DBS_ROLES` in `.env`) — both enforced
+  in `/api/candidates`, spec §8.6.
 - **CI** — `.github/workflows/ci.yml` runs typecheck/lint/build against a
   throwaway Postgres service container on every PR.
 
-What's explicitly *not* here yet (later phases): real verification
-providers, disputes/appeals, admin panel, permanent-hire flow. Don't
+What's explicitly *not* here yet (later phases): disputes/appeals beyond
+this verification override, the rest of the admin panel (account
+suspension, ops dashboard), permanent-hire flow. Also out of scope for
+this pass: the separate `Certification` model (food hygiene, personal
+licence, etc.) and its expiry sweep — Phase 4's own line item is
+specifically "ID/right-to-work/DBS," and certifications are a large
+enough surface (submission, per-body verification, a daily expiry cron)
+to deserve their own pass rather than scope-creeping this one. Don't
 build ahead of the phase — see `../CLAUDE.md`.
+
+## Admin-assisted verification (why, not just how)
+
+The Home Office's right-to-work check has no public API — the actual
+mechanism is a worker generating a 9-character share code at
+gov.uk/prove-right-to-work, which the checking party looks up manually at
+gov.uk/view-right-to-work. DBS checks require being a registered
+umbrella body or working through one commercially — also not a
+self-serve API signup. Both are fundamentally different blockers than
+Stripe/Onfido (which just need a test account you can create yourself in
+minutes): there is no sandbox to test against, at any tier, without an
+actual business relationship. CLAUDE.md itself allows verification to
+"stay partly manual... for a small pilot," so this is the intended shape
+for now, not a shortcut — the code tracks submissions and enforces the
+resubmission cooldown (§8.6) either way, a human just makes the final
+call instead of a webhook.
 
 ## Stripe setup (required to test Phase 3)
 
@@ -87,6 +134,20 @@ build ahead of the phase — see `../CLAUDE.md`.
    test card `4242 4242 4242 4242` with any future expiry/CVC.
 5. Complete a shift between them — `Payment.status` should move through
    `charging` → `charged` → `paid_out`.
+
+## Onfido setup (required to test ID verification)
+
+1. Create an Onfido account (sandbox/test mode) at https://onfido.com —
+   self-serve, no sales contact needed.
+2. Dashboard > Developers > API tokens — copy the **test** token into
+   `ONFIDO_API_TOKEN`.
+3. Dashboard > Developers > Webhooks — create one pointed at
+   `{APP_URL}/api/webhooks/onfido`, subscribed to `check.completed`, and
+   put its signing token in `ONFIDO_WEBHOOK_TOKEN`. Locally this needs a
+   tunnel (e.g. `ngrok http 3000`) since Onfido can't reach `localhost`.
+4. Restart `npm run dev`. Sign up as a worker, fill in the ID
+   verification form with any photo files — Onfido's sandbox accepts
+   arbitrary test images and returns a result within seconds.
 
 ## Local setup
 
