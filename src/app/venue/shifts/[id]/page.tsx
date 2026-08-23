@@ -24,6 +24,7 @@ interface ShiftDetail {
   respondBy: string | null;
   worker: { id: string; name: string } | null;
   payment: PaymentInfo | null;
+  venueFeedback: { id: string } | null;
 }
 
 interface Candidate {
@@ -47,6 +48,10 @@ export default function VenueShiftDetailPage() {
   const [confirmedAttendance, setConfirmedAttendance] = useState(true);
   const [onTime, setOnTime] = useState(true);
   const [minutesLate, setMinutesLate] = useState("0");
+  const [disputing, setDisputing] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputeNote, setDisputeNote] = useState("");
+  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
 
   async function loadShift() {
     const res = await fetch(`/api/shifts/${params.id}`);
@@ -134,6 +139,37 @@ export default function VenueShiftDetailPage() {
       return;
     }
     await loadShift();
+  }
+
+  async function submitDispute() {
+    if (!shift?.venueFeedback || !disputeReason.trim() || !disputeNote.trim()) {
+      setError("Fill in both the reason and a note before submitting.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/disputes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetType: "venue_feedback",
+        targetId: shift.venueFeedback.id,
+        reason: disputeReason,
+        note: disputeNote,
+      }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(
+        body.error === "already_disputed"
+          ? "This has already been disputed."
+          : "Could not submit the dispute."
+      );
+      return;
+    }
+    setDisputeSubmitted(true);
+    setDisputing(false);
   }
 
   if (error && !shift) {
@@ -280,6 +316,34 @@ export default function VenueShiftDetailPage() {
             <button disabled={busy} onClick={handleRetryCharge}>
               Retry payment
             </button>
+          )}
+        </section>
+      )}
+
+      {shift.status === "completed" && shift.venueFeedback && (
+        <section>
+          <h2>Worker&apos;s rating of you</h2>
+          {disputeSubmitted ? (
+            <p>Dispute submitted.</p>
+          ) : disputing ? (
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              <input
+                placeholder="Reason (e.g. this doesn't match what happened)"
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+              />
+              <textarea
+                placeholder="Note — give the details a reviewer would need"
+                value={disputeNote}
+                onChange={(e) => setDisputeNote(e.target.value)}
+              />
+              <div>
+                <button disabled={busy} onClick={submitDispute}>Submit dispute</button>{" "}
+                <button onClick={() => setDisputing(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setDisputing(true)}>Dispute this</button>
           )}
         </section>
       )}

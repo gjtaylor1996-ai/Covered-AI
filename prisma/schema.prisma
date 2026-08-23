@@ -161,6 +161,12 @@ model User {
   role         UserRole
   createdAt    DateTime @default(now())
 
+  // Not in spec §1 — spec §8.2 lists "suspend a worker or venue account"
+  // as an admin endpoint, which needs somewhere to record it. Login and
+  // search both check this (src/lib/auth.ts, /api/candidates).
+  suspendedAt     DateTime?
+  suspendedReason String?
+
   workerProfile     WorkerProfile?
   venueMemberships  VenueMember[]
   adminUser         AdminUser?

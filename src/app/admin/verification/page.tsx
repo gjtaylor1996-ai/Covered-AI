@@ -73,7 +73,8 @@ export default function AdminVerificationPage() {
   return (
     <main style={{ maxWidth: 800, margin: "3rem auto", padding: "0 1rem" }}>
       <p>
-        <Link href="/">&larr; Home</Link>
+        <Link href="/">&larr; Home</Link> · <Link href="/admin/disputes">Disputes</Link> ·{" "}
+        <Link href="/admin/dashboard">Dashboard</Link>
       </p>
       <h1>Verification queue</h1>
       <p style={{ color: "#555" }}>

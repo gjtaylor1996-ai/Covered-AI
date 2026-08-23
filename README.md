@@ -7,21 +7,25 @@ parent Downloads folder) for the full build brief and phasing rationale.
 This is a fresh codebase — `reference/prototypes/*.html` are the click-through
 UI/UX mockups that informed the design; they are not extended in place.
 
-## Status: Phase 4 — Verification
+## Status: Phase 5 — Disputes & admin tooling
 
-Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop),
-Phase 2 (Reliability Score / Venue Trust Score), Phase 3 (Stripe Connect
-payments), and Phase 4 (ID/right-to-work/DBS verification) are built.
-Phase 3 is **code-complete but not live-tested** — it needs a real
-Stripe account, which only you can create (see "Stripe setup" below).
-Phase 4's ID verification (Onfido) is the same situation — code-complete,
-needs your own Onfido test account (see "Onfido setup" below). Phase 4's
-right-to-work and DBS checks are **verified live** in the browser, since
-they don't depend on any external account — see "Admin-assisted
-verification" below for why. Everything through Phase 2 is verified
-against a live database in the browser, not just typechecked; see
-`src/lib/scoring.ts` and `src/lib/venue-trust.ts` for the interpretation
-notes on two spec ambiguities that surfaced (venue_confirmation_rate vs.
+Per spec §8.1, all six... no — five of six phases are built: Phase 0
+(foundations), Phase 1 (core booking loop), Phase 2 (Reliability Score /
+Venue Trust Score), Phase 3 (Stripe Connect payments), Phase 4
+(ID/right-to-work/DBS verification), and Phase 5 (dispute queue +
+admin panel). Only Phase 6 (permanent-hire flow, predictive demand, full
+analytics) remains. Phase 3 and Phase 4's Onfido piece are
+**code-complete but not live-tested** — both need a real external
+account only you can create (see "Stripe setup" / "Onfido setup" below).
+Everything else, including all of Phase 5, is **verified live** against
+the database in the browser: dispute creation with real automated
+triage (a shift with an actual charged Stripe payment classifies as
+"objective" with evidence attached; one without stays "subjective"),
+score exclusion while a dispute is pending, correct score effects after
+resolution either way, an admin correctly blocked from suspending an
+account below ops_manager, and login itself blocked once suspended. See
+`src/lib/scoring.ts` and `src/lib/venue-trust.ts` for interpretation
+notes on two Phase 2 spec ambiguities (venue_confirmation_rate vs.
 attendance_rate_weighted sharing one underlying field, and the
 "late cancellation" tier vs. §3.1's binary 4-hour rule).
 
@@ -91,18 +95,48 @@ What's here:
   from every search result; a rejected DBS only blocks roles that
   actually require one (`REQUIRES_DBS_ROLES` in `.env`) — both enforced
   in `/api/candidates`, spec §8.6.
+- **Disputes & admin tooling** — spec §3.2/§4/§8.2. A worker or venue
+  disputes a `ShiftFeedback`/`VenueFeedback` record via `POST
+  /api/disputes`; automated triage (`src/lib/disputes.ts`) classifies it
+  `objective` (a genuinely independent, tamper-resistant timestamp
+  exists — in practice, that's a charged Stripe payment on the shift;
+  the spec's other example, GPS clock-in/out, was deliberately never
+  built, since the verification doc §3 explicitly says location data
+  should be postcode-level, not live GPS tracking) or `subjective`
+  (nothing to go on but both parties' word). **The triage step never
+  sets `status` — only a human can, via `POST
+  /api/admin/disputes/[id]/resolve`**, enforced in code, not just
+  policy: this is the UK GDPR Article 22 constraint from CLAUDE.md
+  actually implemented. Resolution uses optimistic concurrency (§8.7) —
+  a stale `expectedUpdatedAt` fails the request cleanly instead of
+  silently overwriting a concurrent reviewer's decision. A disputed
+  shift is excluded from the Reliability Score while `pending_review`;
+  `resolved_excluded` keeps it out permanently, `resolved_upheld` puts
+  it back — the spec's scoring doc only says "while under review," but
+  a resolution that changes nothing doesn't fit either status's name,
+  so this is a considered reading, not an oversight. The admin panel
+  (`/admin/dashboard`, `/admin/disputes`, plus the existing
+  `/admin/verification`) adds account suspension
+  (`POST /api/admin/accounts/[id]/suspend`, restricted to ops_manager+
+  per the permission matrix §8.4, blocks login and drops the account
+  from candidate search) and the four ops numbers spec §8.2 names
+  explicitly (open disputes, fill rate, GMV, verification backlog).
+  Every admin action — verification override, dispute resolution,
+  suspension — writes to `AdminAuditLog` (§8.2's "who, what, when, why").
 - **CI** — `.github/workflows/ci.yml` runs typecheck/lint/build against a
   throwaway Postgres service container on every PR.
 
-What's explicitly *not* here yet (later phases): disputes/appeals beyond
-this verification override, the rest of the admin panel (account
-suspension, ops dashboard), permanent-hire flow. Also out of scope for
-this pass: the separate `Certification` model (food hygiene, personal
-licence, etc.) and its expiry sweep — Phase 4's own line item is
-specifically "ID/right-to-work/DBS," and certifications are a large
-enough surface (submission, per-body verification, a daily expiry cron)
-to deserve their own pass rather than scope-creeping this one. Don't
-build ahead of the phase — see `../CLAUDE.md`.
+What's explicitly *not* here yet: Phase 6 (permanent-hire flow,
+predictive demand, full analytics, quick actions) — everything else in
+the six-phase plan is built. Also still out of scope, flagged rather
+than silently skipped: the separate `Certification` model (food
+hygiene, personal licence, etc.) and its expiry sweep, which was never
+part of any single phase's named scope and is a large enough surface
+(submission, per-body verification, a daily expiry cron) to deserve its
+own pass; and known limitations noted inline in the suspend endpoint
+(an already-active session isn't revoked mid-session — stateless JWTs
+with no session store — only new logins are blocked). Don't build ahead
+without checking — see `../CLAUDE.md`.
 
 ## Admin-assisted verification (why, not just how)
 

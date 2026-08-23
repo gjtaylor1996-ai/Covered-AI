@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
     // which one it was.
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }
+  if (user.suspendedAt) {
+    return NextResponse.json({ error: "account_suspended" }, { status: 403 });
+  }
 
   const token = await createSessionToken({ userId: user.id, role: user.role });
   const response = NextResponse.json({

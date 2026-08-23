@@ -37,6 +37,7 @@ export async function GET(
       venue: { select: { id: true, name: true } },
       worker: { select: { id: true, name: true } },
       payment: true,
+      venueFeedback: { select: { id: true } },
     },
   });
 

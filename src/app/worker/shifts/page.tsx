@@ -15,6 +15,7 @@ interface ShiftListItem {
   status: string;
   respondBy: string | null;
   venue: { id: string; name: string };
+  shiftFeedback: { id: string } | null;
 }
 
 interface ScoreBreakdown {
@@ -31,6 +32,10 @@ export default function WorkerShiftsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [ratingId, setRatingId] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [disputingId, setDisputingId] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputeNote, setDisputeNote] = useState("");
+  const [disputedFeedback, setDisputedFeedback] = useState<Set<string>>(new Set());
 
   async function loadShifts() {
     const res = await fetch("/api/shifts");
@@ -126,6 +131,39 @@ export default function WorkerShiftsPage() {
     } else {
       setRatingId(null);
     }
+  }
+
+  async function submitDispute(feedbackId: string) {
+    if (!disputeReason.trim() || !disputeNote.trim()) {
+      setError("Fill in both the reason and a note before submitting.");
+      return;
+    }
+    setBusyId(disputingId);
+    setError(null);
+    const res = await fetch("/api/disputes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetType: "shift_feedback",
+        targetId: feedbackId,
+        reason: disputeReason,
+        note: disputeNote,
+      }),
+    });
+    setBusyId(null);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(
+        body.error === "already_disputed"
+          ? "This has already been disputed."
+          : "Could not submit the dispute."
+      );
+      return;
+    }
+    setDisputedFeedback((s) => new Set(s).add(feedbackId));
+    setDisputingId(null);
+    setDisputeReason("");
+    setDisputeNote("");
   }
 
   return (
@@ -226,6 +264,40 @@ export default function WorkerShiftsPage() {
                       {" "}
                       <button onClick={() => setRatingId(shift.id)}>
                         Rate this venue
+                      </button>
+                    </>
+                  ))}
+                {shift.shiftFeedback &&
+                  ["completed", "no_show"].includes(shift.status) &&
+                  (disputedFeedback.has(shift.shiftFeedback.id) ? (
+                    <span style={{ color: "#555" }}> — dispute submitted</span>
+                  ) : disputingId === shift.id ? (
+                    <div style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
+                      <input
+                        placeholder="Reason (e.g. I was on time, this is wrong)"
+                        value={disputeReason}
+                        onChange={(e) => setDisputeReason(e.target.value)}
+                      />
+                      <textarea
+                        placeholder="Note — give the details a reviewer would need"
+                        value={disputeNote}
+                        onChange={(e) => setDisputeNote(e.target.value)}
+                      />
+                      <div>
+                        <button
+                          disabled={busyId === shift.id}
+                          onClick={() => submitDispute(shift.shiftFeedback!.id)}
+                        >
+                          Submit dispute
+                        </button>{" "}
+                        <button onClick={() => setDisputingId(null)}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {" "}
+                      <button onClick={() => setDisputingId(shift.id)}>
+                        Dispute this
                       </button>
                     </>
                   ))}

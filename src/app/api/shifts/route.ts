@@ -32,7 +32,10 @@ export async function GET(request: NextRequest) {
     }
     const shifts = await db.shift.findMany({
       where: { venueId: membership.venueId },
-      include: { worker: { select: { id: true, name: true } } },
+      include: {
+        worker: { select: { id: true, name: true } },
+        venueFeedback: { select: { id: true } },
+      },
       orderBy: { date: "asc" },
     });
     return NextResponse.json({ shifts });
@@ -44,7 +47,10 @@ export async function GET(request: NextRequest) {
   }
   const shifts = await db.shift.findMany({
     where: { workerId: worker.id },
-    include: { venue: { select: { id: true, name: true } } },
+    include: {
+      venue: { select: { id: true, name: true } },
+      shiftFeedback: { select: { id: true } },
+    },
     orderBy: { date: "asc" },
   });
   return NextResponse.json({ shifts });

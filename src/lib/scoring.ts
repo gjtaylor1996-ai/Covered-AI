@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { getBusinessRules } from "@/config/business-rules";
+import { getDisputedShiftIds } from "@/lib/disputes";
 import type { ReliabilityTier } from "@prisma/client";
 
 // Reliability Score engine — spec §2.1, reasoning in
@@ -69,7 +70,7 @@ export async function computeReliabilityScore(
     rules.scoring;
   const now = new Date();
 
-  const [completedShifts, lateCancelShifts] = await Promise.all([
+  const [allCompletedShifts, lateCancelShifts, disputedShiftIds] = await Promise.all([
     db.shift.findMany({
       where: { workerId, status: { in: ["completed", "no_show"] } },
       include: { shiftFeedback: true },
@@ -78,7 +79,12 @@ export async function computeReliabilityScore(
       where: { workerId, status: "cancelled_by_worker", lateCancellation: true },
       select: { createdAt: true },
     }),
+    getDisputedShiftIds(workerId),
   ]);
+  // Scoring model doc §6: a shift with a pending or successful dispute
+  // (resolved_excluded) doesn't count toward the score — see
+  // getDisputedShiftIds for why resolved_upheld puts it back in.
+  const completedShifts = allCompletedShifts.filter((s) => !disputedShiftIds.has(s.id));
   const lateCancellations = lateCancelShifts.length;
 
   const attendanceCountedShifts = completedShifts.length + lateCancellations;
