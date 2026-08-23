@@ -15,9 +15,12 @@ export async function GET(request: NextRequest) {
       email: true,
       role: true,
       createdAt: true,
-      workerProfile: { select: { id: true, name: true } },
+      workerProfile: { select: { id: true, name: true, bankAccountConnected: true } },
       venueMemberships: {
-        select: { role: true, venue: { select: { id: true, name: true } } },
+        select: {
+          role: true,
+          venue: { select: { id: true, name: true, stripeCustomerId: true } },
+        },
       },
     },
   });

@@ -24,6 +24,8 @@ interface TrustBreakdown {
 export default function VenueShiftsPage() {
   const [shifts, setShifts] = useState<ShiftListItem[] | null>(null);
   const [trust, setTrust] = useState<TrustBreakdown | null>(null);
+  const [paymentMethodConnected, setPaymentMethodConnected] = useState<boolean | null>(null);
+  const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [role, setRole] = useState<WorkerRoleKey>("Bartender");
@@ -51,10 +53,34 @@ export default function VenueShiftsPage() {
     }
   }
 
+  async function loadPaymentStatus() {
+    const res = await fetch("/api/me");
+    if (res.ok) {
+      const body = await res.json();
+      setPaymentMethodConnected(
+        Boolean(body.user.venueMemberships?.[0]?.venue?.stripeCustomerId)
+      );
+    }
+  }
+
   useEffect(() => {
     loadShifts();
     loadTrust();
+    loadPaymentStatus();
   }, []);
+
+  async function connectPaymentMethod() {
+    setConnecting(true);
+    setError(null);
+    const res = await fetch("/api/venues/me/stripe/setup-checkout", { method: "POST" });
+    setConnecting(false);
+    if (!res.ok) {
+      setError("Could not start payment method setup.");
+      return;
+    }
+    const body = await res.json();
+    window.location.href = body.url;
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -96,6 +122,15 @@ export default function VenueShiftsPage() {
             Based on {trust.feedbackCount} worker rating{trust.feedbackCount === 1 ? "" : "s"}.
           </p>
         </div>
+      )}
+
+      {paymentMethodConnected === false && (
+        <p>
+          <button disabled={connecting} onClick={connectPaymentMethod}>
+            {connecting ? "Redirecting…" : "Add payment method"}
+          </button>{" "}
+          — shifts won&apos;t be charged until a card is on file.
+        </p>
       )}
 
       <form

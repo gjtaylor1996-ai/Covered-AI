@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { recalculateReliabilityScore } from "@/lib/scoring";
+import { attemptShiftPayment } from "@/lib/payments";
 
 const completeSchema = z.object({
   confirmedAttendance: z.boolean(),
@@ -69,5 +70,10 @@ export async function POST(
 
   await recalculateReliabilityScore(shift.workerId!);
 
-  return NextResponse.json({ shift: updatedShift, feedback });
+  // Only attempt payment on an actual attendance — a no-show shouldn't
+  // charge the venue. attemptShiftPayment never throws (see its own
+  // comment) so this can't take down shift completion.
+  const payment = confirmedAttendance ? await attemptShiftPayment(shift.id) : null;
+
+  return NextResponse.json({ shift: updatedShift, feedback, payment });
 }

@@ -7,17 +7,19 @@ parent Downloads folder) for the full build brief and phasing rationale.
 This is a fresh codebase — `reference/prototypes/*.html` are the click-through
 UI/UX mockups that informed the design; they are not extended in place.
 
-## Status: Phase 2 — Trust layer
+## Status: Phase 3 — Payments
 
-Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop), and
-Phase 2 (Reliability Score / Venue Trust Score, two-way feedback) are
-built. Phase 2's "done" bar — scores actually move based on real
-completed shifts, matching the formulas in §2 — is verified against a
-live database, not just typechecked; see `src/lib/scoring.ts` and
-`src/lib/venue-trust.ts` for the interpretation notes on the two spec
-ambiguities this surfaced (venue_confirmation_rate vs.
-attendance_rate_weighted sharing one underlying field, and the
-"late cancellation" tier vs. §3.1's binary 4-hour rule).
+Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop),
+Phase 2 (Reliability Score / Venue Trust Score, two-way feedback), and
+Phase 3 (Stripe Connect payments) are built. Phase 3 is **code-complete
+but not live-tested** — it needs a real Stripe account, which only you
+can create (see "Stripe setup" below). Everything through Phase 2 is
+verified against a live database in the browser, not just typechecked;
+see `src/lib/scoring.ts` and `src/lib/venue-trust.ts` for the
+interpretation notes on two spec ambiguities that surfaced
+(venue_confirmation_rate vs. attendance_rate_weighted sharing one
+underlying field, and the "late cancellation" tier vs. §3.1's binary
+4-hour rule).
 
 What's here:
 - **Auth** — email/password signup, login, logout via `/api/auth/*`,
@@ -48,12 +50,43 @@ What's here:
   constant (recency window, late-cancellation notice hours, punctuality
   cap, confidence saturation point) from env, not hardcoded, per
   CLAUDE.md.
+- **Payments** — Stripe Connect split-payment flow per spec §5: the
+  platform charges the venue (rate + commission) and transfers the
+  worker's rate to their Connect account, keeping commission as revenue
+  (`src/lib/payments.ts`). Worker payout onboarding
+  (`/api/workers/me/stripe/connect`) and venue card setup
+  (`/api/venues/me/stripe/setup-checkout`) are hosted Stripe redirects,
+  not embedded Elements, to keep the frontend dependency-free. Payment is
+  attempted automatically when a shift completes and never blocks
+  completion — a shift can complete before either side has finished
+  Stripe onboarding, in which case `Payment.status` sits at
+  `pending_setup` until a manual retry (`POST /shifts/:id/charge`) or the
+  next automatic attempt succeeds. `POST /api/webhooks/stripe` is the
+  source of truth for account/payment-method state (the redirect
+  handlers do a best-effort sync too, in case the user closes the tab).
+  None of this is in the spec's original API surface (§4) — it's the
+  minimum needed to make "money actually moves" (§8.1) true.
 - **CI** — `.github/workflows/ci.yml` runs typecheck/lint/build against a
   throwaway Postgres service container on every PR.
 
-What's explicitly *not* here yet (later phases): payments, real
-verification providers, disputes/appeals, admin panel, permanent-hire
-flow. Don't build ahead of the phase — see `../CLAUDE.md`.
+What's explicitly *not* here yet (later phases): real verification
+providers, disputes/appeals, admin panel, permanent-hire flow. Don't
+build ahead of the phase — see `../CLAUDE.md`.
+
+## Stripe setup (required to test Phase 3)
+
+1. Create a Stripe account (test mode) at https://dashboard.stripe.com/register.
+2. Grab a test secret key from https://dashboard.stripe.com/test/apikeys
+   and set `STRIPE_SECRET_KEY` in `.env`.
+3. Install the [Stripe CLI](https://docs.stripe.com/stripe-cli), then run
+   `stripe listen --forward-to localhost:3000/api/webhooks/stripe` — it
+   prints a webhook signing secret; set that as `STRIPE_WEBHOOK_SECRET`.
+4. Restart `npm run dev`. Sign up as a worker, click "Connect payouts",
+   and complete onboarding with Stripe's test data (any values work in
+   test mode). Sign up as a venue, click "Add payment method", and use
+   test card `4242 4242 4242 4242` with any future expiry/CVC.
+5. Complete a shift between them — `Payment.status` should move through
+   `charging` → `charged` → `paid_out`.
 
 ## Local setup
 

@@ -138,6 +138,19 @@ enum AdminRole {
   super_admin
 }
 
+// Not in spec §1 — Phase 3 (§8.1) needs a record of where each shift's
+// money is in the charge-then-transfer flow. "pending_setup" covers a
+// shift completing before either side has finished Stripe onboarding —
+// the booking loop stays usable either way; payment catches up once
+// both sides are ready (retry via POST /shifts/:id/charge).
+enum PaymentStatus {
+  pending_setup
+  charging
+  charged
+  paid_out
+  failed
+}
+
 // --- Core identity --------------------------------------------------------
 
 model User {
@@ -179,7 +192,14 @@ model WorkerProfile {
   shiftsCompleted       Int                 @default(0)
   noShows               Int                 @default(0)
   consentGivenAt        DateTime?
+  // bankAccountConnected is the spec §1 field; it doubles here as
+  // "Stripe Connect onboarding is complete" (charges_enabled &&
+  // payouts_enabled on the account), kept in sync by the account.updated
+  // webhook. stripeConnectAccountId is the Stripe-specific pointer
+  // needed to actually create transfers — not in the original spec, but
+  // Phase 3 (§8.1) can't move money without it.
   bankAccountConnected  Boolean             @default(false)
+  stripeConnectAccountId String?            @unique
   createdAt             DateTime            @default(now())
 
   certifications  Certification[]
@@ -215,6 +235,12 @@ model Venue {
   trustScore        Float?
   trustTier         ReliabilityTier   @default(rising)
   createdAt         DateTime          @default(now())
+
+  // Not in spec §1 — needed for Phase 3 (§8.1) commission collection.
+  // stripeCustomerId is the Stripe Customer; the default payment method
+  // is attached to that Customer on Stripe's side (set via the
+  // checkout.session.completed webhook), so no separate field for it.
+  stripeCustomerId  String?           @unique
 
   members        VenueMember[]
   shifts         Shift[]
@@ -266,11 +292,34 @@ model Shift {
 
   shiftFeedback  ShiftFeedback?
   venueFeedback  VenueFeedback?
+  payment        Payment?
 
   @@index([venueId])
   @@index([workerId])
   @@index([status])
   @@map("shifts")
+}
+
+// Not in spec §1 — see PaymentStatus above. One row per shift, created
+// when the shift completes (§3.1: completion is the payment trigger too,
+// by implication of "money actually moves" in §8.1's Phase 3 done-bar).
+model Payment {
+  id                     String        @id @default(uuid())
+  shiftId                String        @unique
+  shift                  Shift         @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  workerAmountCents      Int
+  commissionAmountCents  Int
+  totalAmountCents       Int
+  currency               String        @default("gbp")
+  status                 PaymentStatus @default(pending_setup)
+  stripePaymentIntentId  String?
+  stripeTransferId       String?
+  failureReason          String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([status])
+  @@map("payments")
 }
 
 model ShiftFeedback {

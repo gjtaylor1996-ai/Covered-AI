@@ -5,6 +5,14 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 
+interface PaymentInfo {
+  status: string;
+  workerAmountCents: number;
+  commissionAmountCents: number;
+  totalAmountCents: number;
+  failureReason: string | null;
+}
+
 interface ShiftDetail {
   id: string;
   role: WorkerRoleKey;
@@ -15,6 +23,7 @@ interface ShiftDetail {
   status: string;
   respondBy: string | null;
   worker: { id: string; name: string } | null;
+  payment: PaymentInfo | null;
 }
 
 interface Candidate {
@@ -110,6 +119,18 @@ export default function VenueShiftDetailPage() {
     setBusy(false);
     if (!res.ok) {
       setError("Could not mark this shift complete.");
+      return;
+    }
+    await loadShift();
+  }
+
+  async function handleRetryCharge() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/shifts/${params.id}/charge`, { method: "POST" });
+    setBusy(false);
+    if (!res.ok) {
+      setError("Could not retry payment.");
       return;
     }
     await loadShift();
@@ -242,6 +263,26 @@ export default function VenueShiftDetailPage() {
       {["completed", "no_show", "cancelled_by_worker", "cancelled_by_venue"].includes(
         shift.status
       ) && <p>This shift is closed ({shift.status}).</p>}
+
+      {shift.status === "completed" && shift.payment && (
+        <section>
+          <h2>Payment</h2>
+          <p>
+            Status: <strong>{shift.payment.status}</strong> — £
+            {(shift.payment.totalAmountCents / 100).toFixed(2)} total (£
+            {(shift.payment.workerAmountCents / 100).toFixed(2)} to worker, £
+            {(shift.payment.commissionAmountCents / 100).toFixed(2)} commission)
+          </p>
+          {shift.payment.failureReason && (
+            <p style={{ color: "#a55" }}>{shift.payment.failureReason}</p>
+          )}
+          {(shift.payment.status === "pending_setup" || shift.payment.status === "failed") && (
+            <button disabled={busy} onClick={handleRetryCharge}>
+              Retry payment
+            </button>
+          )}
+        </section>
+      )}
     </main>
   );
 }

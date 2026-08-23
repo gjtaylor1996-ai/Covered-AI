@@ -25,9 +25,11 @@ interface ScoreBreakdown {
 export default function WorkerShiftsPage() {
   const [shifts, setShifts] = useState<ShiftListItem[] | null>(null);
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
+  const [payoutsConnected, setPayoutsConnected] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [ratingId, setRatingId] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   async function loadShifts() {
     const res = await fetch("/api/shifts");
@@ -47,10 +49,32 @@ export default function WorkerShiftsPage() {
     }
   }
 
+  async function loadPayoutStatus() {
+    const res = await fetch("/api/me");
+    if (res.ok) {
+      const body = await res.json();
+      setPayoutsConnected(Boolean(body.user.workerProfile?.bankAccountConnected));
+    }
+  }
+
   useEffect(() => {
     loadShifts();
     loadScore();
+    loadPayoutStatus();
   }, []);
+
+  async function connectPayouts() {
+    setConnecting(true);
+    setError(null);
+    const res = await fetch("/api/workers/me/stripe/connect", { method: "POST" });
+    setConnecting(false);
+    if (!res.ok) {
+      setError("Could not start payout setup.");
+      return;
+    }
+    const body = await res.json();
+    window.location.href = body.url;
+  }
 
   async function cancelShift(id: string) {
     setBusyId(id);
@@ -117,6 +141,15 @@ export default function WorkerShiftsPage() {
           </strong>
           <p style={{ margin: "0.25rem 0 0", color: "#555" }}>{score.plainLanguageSummary}</p>
         </div>
+      )}
+
+      {payoutsConnected === false && (
+        <p>
+          <button disabled={connecting} onClick={connectPayouts}>
+            {connecting ? "Redirecting…" : "Connect payouts"}
+          </button>{" "}
+          — you won&apos;t be paid for completed shifts until this is set up.
+        </p>
       )}
 
       {error && <p style={{ color: "crimson" }}>{error}</p>}
