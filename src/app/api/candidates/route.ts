@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
         })
       : workers;
 
+  const { minShiftsForScore, newWorkerMaxShiftValueCents } = getBusinessRules();
   const withMatchScore = filtered
     .map((w) => {
       const { availability: _availability, favouritedBy, ...rest } = w;
@@ -106,6 +107,11 @@ export async function GET(request: NextRequest) {
         ...rest,
         isFavourite: favouritedBy.length > 0,
         matchScore: computeMatchScore(w),
+        // Cold-start flag, not spec: this worker can't be offered a
+        // shift worth more than newWorkerMaxShiftValueCents (enforced
+        // server-side in the offer endpoint) — surfaced here so venues
+        // aren't surprised by the block. See business-rules.ts.
+        isNewWorker: w.shiftsCompleted < minShiftsForScore,
       };
     })
     .sort((a, b) => {
@@ -114,5 +120,5 @@ export async function GET(request: NextRequest) {
       return b.matchScore - a.matchScore; // default: best match first
     });
 
-  return NextResponse.json({ candidates: withMatchScore });
+  return NextResponse.json({ candidates: withMatchScore, newWorkerMaxShiftValueCents });
 }

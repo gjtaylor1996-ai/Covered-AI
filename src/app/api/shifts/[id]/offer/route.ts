@@ -5,6 +5,8 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { expireIfPastDeadline } from "@/lib/shift-expiry";
 import { isWorkerDoubleBooked } from "@/lib/shift-time";
+import { computeShiftAmounts } from "@/lib/payments";
+import { getBusinessRules } from "@/config/business-rules";
 
 const offerSchema = z.object({ workerId: z.string().uuid() });
 
@@ -56,6 +58,24 @@ export async function POST(
   // (btree_gist EXCLUDE) not yet added here.
   if (await isWorkerDoubleBooked(worker.id, shift)) {
     return NextResponse.json({ error: "worker_double_booked" }, { status: 409 });
+  }
+
+  // Cold-start safety net: an unproven worker can't be offered a shift
+  // worth more than the configured cap, protecting the venue's exposure
+  // to a new worker's first few shifts. See business-rules.ts.
+  const rules = getBusinessRules();
+  if (worker.shiftsCompleted < rules.minShiftsForScore) {
+    const { workerAmountCents } = computeShiftAmounts(shift);
+    if (workerAmountCents > rules.newWorkerMaxShiftValueCents) {
+      return NextResponse.json(
+        {
+          error: "exceeds_new_worker_cap",
+          shiftValueCents: workerAmountCents,
+          maxShiftValueCents: rules.newWorkerMaxShiftValueCents,
+        },
+        { status: 422 }
+      );
+    }
   }
 
   const respondBy = new Date(Date.now() + RESPOND_WINDOW_HOURS * 60 * 60 * 1000);

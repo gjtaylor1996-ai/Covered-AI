@@ -38,6 +38,7 @@ interface Candidate {
   shiftsCompleted: number;
   isFavourite: boolean;
   matchScore: number;
+  isNewWorker: boolean;
 }
 
 // Quick actions from the prototype (covered.html, applyQuickAction) —
@@ -113,7 +114,9 @@ export default function VenueShiftDetailPage() {
       setError(
         body.error === "worker_double_booked"
           ? "That worker already has an overlapping shift."
-          : "Could not send the offer."
+          : body.error === "exceeds_new_worker_cap"
+            ? `This shift pays more than the £${(body.maxShiftValueCents / 100).toFixed(2)} cap for a worker with no track record yet.`
+            : "Could not send the offer."
       );
       return;
     }
@@ -273,6 +276,11 @@ export default function VenueShiftDetailPage() {
                       ? `${c.reliabilityScore} (${c.reliabilityTier})`
                       : c.reliabilityTier}
                     , {c.shiftsCompleted} shifts completed
+                    {c.isNewWorker && (
+                      <span style={{ color: "#a55", marginLeft: "0.4rem" }}>
+                        · New — capped shift value
+                      </span>
+                    )}
                   </span>
                   <button disabled={busy} onClick={() => handleOffer(c.id)}>
                     Offer

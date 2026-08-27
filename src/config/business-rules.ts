@@ -48,8 +48,20 @@ export function getBusinessRules() {
       extendedHireWeeks: envInt("EXTENDED_HIRE_WEEKS", 8),
     },
 
-    // Reliability score cold-start threshold, scoring model doc §4.
+    // Reliability score cold-start threshold, scoring model doc §4. Also
+    // doubles as the "new worker" cutoff below — a worker with no score
+    // yet is exactly the worker a venue has no behavioural signal on.
     minShiftsForScore: envInt("MIN_SHIFTS_FOR_SCORE", 10),
+
+    // Cold-start safety net, not in the spec: a worker below
+    // minShiftsForScore can't be offered a shift worth more than this
+    // (their pay, not the venue's total cost) — caps a venue's exposure
+    // to an unproven worker's first few shifts without blocking new
+    // workers from the platform entirely. Pure business risk management,
+    // so it's a hard block rather than a scoring decision — doesn't
+    // implicate the Article 22 human-in-the-loop constraint that governs
+    // the Reliability Score itself.
+    newWorkerMaxShiftValueCents: envInt("NEW_WORKER_MAX_SHIFT_VALUE_CENTS", 10000),
 
     // Reliability Score inputs, spec §2.1 / scoring model doc §3. The
     // spec explicitly calls this formula "illustrative" and says the
