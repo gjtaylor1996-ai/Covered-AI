@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       rightToWorkDob: true,
       rightToWorkSubmittedAt: true,
       idVerificationStatus: true,
-      onfidoCheckId: true,
+      personaInquiryId: true,
       idVerificationSubmittedAt: true,
       dbsStatus: true,
       dbsApplicationRef: true,

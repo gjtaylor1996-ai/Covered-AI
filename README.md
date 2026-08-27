@@ -13,12 +13,16 @@ Per spec §8.1: Phase 0 (foundations), Phase 1 (core booking loop),
 Phase 2 (Reliability Score / Venue Trust Score), Phase 3 (Stripe Connect
 payments), Phase 4 (ID/right-to-work/DBS verification), Phase 5
 (dispute queue + admin panel), and Phase 6 (permanent-hire flow,
-analytics, demand forecast, quick actions) are all built. Phase 3 and
-Phase 4's Onfido piece are **code-complete but not live-tested** — both
-need a real external account only you can create (see "Stripe setup" /
-"Onfido setup" below, and `SETUP.md` for the consolidated list).
-Everything else — Phases 0, 1, 2, 5, and 6 in full — is **verified live**
-against the database in the browser, not just typechecked. Phase 6
+analytics, demand forecast, quick actions) are all built. Phase 3 is
+**verified live** against real Stripe test-mode API calls: a full
+shift (create → offer → accept → complete) walked `Payment.status`
+through `charging` → `charged` → `paid_out`, with a real PaymentIntent
+and Transfer on both ends. Phase 4's Persona piece is **code-complete
+but not live-tested** — it needs a real external account only you can
+create (see "Persona setup" below, and `SETUP.md` for the consolidated
+list). Everything else — Phases 0, 1, 2, 5, and 6 in full — is
+**verified live** against the database in the browser, not just
+typechecked. Phase 6
 highlights: the permanent-hire flow was walked through end to end
 (propose → worker accepts → fee calculated correctly at £4,800 for a
 £24,000 salary and 2 completed shifts → worker confirmed excluded from
@@ -77,12 +81,15 @@ What's here:
   None of this is in the spec's original API surface (§4) — it's the
   minimum needed to make "money actually moves" (§8.1) true.
 - **Verification** — spec §8.1 Phase 4. ID verification runs through
-  Onfido (`src/lib/onfido.ts`): a worker uploads a photo ID and a selfie
-  via plain multipart upload (no Onfido SDK embedded, same
-  dependency-free approach as Stripe), Onfido runs document + facial
-  similarity checks, and `POST /api/webhooks/onfido` resolves
-  `idVerificationStatus` — "clear" verifies, anything else (including
-  Onfido's own "consider" result) stays pending for a human to look at,
+  Persona (`src/lib/persona.ts`) — originally built against Onfido per
+  the spec, switched after Onfido's Entrust acquisition moved API
+  access behind a sales-led enterprise signup with no self-serve
+  sandbox left to test against. Same redirect pattern as Stripe Connect
+  onboarding: a worker is sent to a one-time hosted-flow link where
+  Persona itself collects the photo ID and selfie (we never handle the
+  raw files), and `POST /api/webhooks/persona` resolves
+  `idVerificationStatus` — "approved" verifies, anything else (declined,
+  failed, needs_review, expired) stays pending for a human to look at,
   rather than auto-rejecting a possible false negative. Right to work
   and DBS checks have **no self-serve API in the real world** — see
   "Admin-assisted verification" below — so a worker submits their
@@ -178,7 +185,7 @@ gov.uk/prove-right-to-work, which the checking party looks up manually at
 gov.uk/view-right-to-work. DBS checks require being a registered
 umbrella body or working through one commercially — also not a
 self-serve API signup. Both are fundamentally different blockers than
-Stripe/Onfido (which just need a test account you can create yourself in
+Stripe/Persona (which just need a test account you can create yourself in
 minutes): there is no sandbox to test against, at any tier, without an
 actual business relationship. CLAUDE.md itself allows verification to
 "stay partly manual... for a small pilot," so this is the intended shape
@@ -201,19 +208,27 @@ call instead of a webhook.
 5. Complete a shift between them — `Payment.status` should move through
    `charging` → `charged` → `paid_out`.
 
-## Onfido setup (required to test ID verification)
+## Persona setup (required to test ID verification)
 
-1. Create an Onfido account (sandbox/test mode) at https://onfido.com —
-   self-serve, no sales contact needed.
-2. Dashboard > Developers > API tokens — copy the **test** token into
-   `ONFIDO_API_TOKEN`.
-3. Dashboard > Developers > Webhooks — create one pointed at
-   `{APP_URL}/api/webhooks/onfido`, subscribed to `check.completed`, and
-   put its signing token in `ONFIDO_WEBHOOK_TOKEN`. Locally this needs a
-   tunnel (e.g. `ngrok http 3000`) since Onfido can't reach `localhost`.
-4. Restart `npm run dev`. Sign up as a worker, fill in the ID
-   verification form with any photo files — Onfido's sandbox accepts
-   arbitrary test images and returns a result within seconds.
+Onfido was the spec's original choice, but its post-Entrust API access
+now needs a sales-led enterprise signup with no self-serve sandbox —
+Persona fills the same role and still has one.
+
+1. Create a Persona account (Sandbox environment) at
+   https://withpersona.com — self-serve, no sales contact needed.
+2. In the Sandbox environment, create an Inquiry Template (any
+   government-ID + selfie template works) and copy its id (starts
+   `itmpl_`) into `PERSONA_INQUIRY_TEMPLATE_ID`.
+3. Dashboard > (Sandbox) > API keys — copy a key into `PERSONA_API_KEY`.
+4. Dashboard > (Sandbox) > Webhooks — create one pointed at
+   `{APP_URL}/api/webhooks/persona`, subscribed to at least
+   `inquiry.approved`, and put its secret (starts `wbhsec_`) in
+   `PERSONA_WEBHOOK_SECRET`. Locally this needs a tunnel (e.g.
+   `ngrok http 3000`) since Persona can't reach `localhost`.
+5. Restart `npm run dev`. Sign up as a worker, enter a date of birth,
+   and click "Start ID verification" — you're redirected to Persona's
+   hosted flow, which accepts arbitrary test images in Sandbox and
+   returns a result within seconds.
 
 ## Local setup
 

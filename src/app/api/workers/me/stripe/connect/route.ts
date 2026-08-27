@@ -9,6 +9,14 @@ import { getStripe, getAppUrl } from "@/lib/stripe";
  * Returns a one-time onboarding URL to redirect the browser to — not in
  * the spec's original API surface, but Phase 3 (§8.1) payouts can't
  * happen without it.
+ *
+ * FOLLOW-UP: this uses the v1 Accounts API (`stripe.accounts.create`).
+ * Stripe now points new Connect integrations at Accounts v2
+ * (POST /v2/core/accounts) instead — v1 still works but needs "Accounts
+ * v1 support" enabled in the Dashboard
+ * (Settings > Features > feat_accounts_v1_support) as a compatibility
+ * mode. Worth migrating to v2 properly rather than relying on that
+ * toggle long-term: https://docs.stripe.com/connect/accounts-v2/account-creation
  */
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);

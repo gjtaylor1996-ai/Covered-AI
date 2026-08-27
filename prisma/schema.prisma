@@ -210,15 +210,17 @@ model WorkerProfile {
 
   // Not in spec §1 — Phase 4 (§8.1) needs somewhere to keep the
   // provider-specific state and submission timestamps behind the three
-  // VerificationStatus fields above. idVerification goes through Onfido
-  // (real API, self-serve sandbox). rightToWork and dbs have no
-  // self-serve API in the real world — the Home Office RTW check is a
-  // manual gov.uk share-code lookup, and DBS checks require a registered
-  // umbrella-body relationship — so both stay "worker submits, admin
-  // confirms" per the verification doc's data (§1) and CLAUDE.md's
-  // allowance for partly-manual verification during a pilot.
-  onfidoApplicantId          String?   @unique
-  onfidoCheckId               String?
+  // VerificationStatus fields above. idVerification goes through Persona
+  // (real API, self-serve sandbox) — originally built against Onfido,
+  // switched after Onfido's Entrust acquisition moved API access behind
+  // a sales-led enterprise signup with no self-serve sandbox. rightToWork
+  // and dbs have no self-serve API in the real world — the Home Office
+  // RTW check is a manual gov.uk share-code lookup, and DBS checks
+  // require a registered umbrella-body relationship — so both stay
+  // "worker submits, admin confirms" per the verification doc's data
+  // (§1) and CLAUDE.md's allowance for partly-manual verification during
+  // a pilot.
+  personaInquiryId             String?   @unique
   idVerificationSubmittedAt   DateTime?
   rightToWorkShareCode        String?
   rightToWorkDob               DateTime?
@@ -265,6 +267,14 @@ model Venue {
   // is attached to that Customer on Stripe's side (set via the
   // checkout.session.completed webhook), so no separate field for it.
   stripeCustomerId  String?           @unique
+
+  // Per-venue commission override (fraction, e.g. 0.10 for 10%). Null
+  // means "use the platform default" (COMMISSION_RATE, see
+  // src/config/business-rules.ts) — most venues should have no
+  // override. Negotiated rates are a business decision, not something
+  // a fixed global constant can express; CLAUDE.md requires commercial
+  // figures like this stay configurable, not hardcoded.
+  commissionRateOverride Float?
 
   members        VenueMember[]
   shifts         Shift[]

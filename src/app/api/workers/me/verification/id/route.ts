@@ -3,14 +3,16 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getWorkerProfile } from "@/lib/permissions";
 import { isWithinResubmissionCooldown } from "@/lib/verification";
-import { createApplicant, createCheck, uploadDocument, uploadLivePhoto } from "@/lib/onfido";
+import { createInquiry, generateOneTimeLink } from "@/lib/persona";
+import { getAppUrl } from "@/lib/stripe";
 
 /**
- * Submits a passport/photo ID plus a selfie for Onfido document + facial
- * similarity checks. Plain multipart upload rather than embedding
- * Onfido's Web SDK — keeps the frontend dependency-free, same reasoning
- * as the Stripe Checkout redirects in Phase 3. idVerificationStatus
- * stays "pending" until the check.completed webhook resolves it.
+ * Starts (or resumes) Persona ID verification. Returns a one-time
+ * hosted-flow URL to redirect the browser to — same redirect pattern as
+ * Stripe Connect onboarding, and for the same reason: document + selfie
+ * capture happens on the provider's own infrastructure, not ours.
+ * idVerificationStatus stays "pending" until the inquiry.approved
+ * webhook resolves it (or the return redirect's best-effort sync does).
  */
 export async function POST(request: NextRequest) {
   const session = await getSessionFromRequest(request);
@@ -29,45 +31,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "resubmission_cooldown" }, { status: 429 });
   }
 
-  const form = await request.formData().catch(() => null);
-  const dateOfBirth = form?.get("dateOfBirth");
-  const documentFront = form?.get("documentFront");
-  const livePhoto = form?.get("livePhoto");
-  if (
-    typeof dateOfBirth !== "string" ||
-    !(documentFront instanceof File) ||
-    !(livePhoto instanceof File)
-  ) {
+  const body = await request.json().catch(() => null);
+  const dateOfBirth = body?.dateOfBirth;
+  if (typeof dateOfBirth !== "string" || !dateOfBirth) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const nameParts = worker.name.split(" ").filter(Boolean);
   const firstName = nameParts[0] ?? worker.name;
   const lastName = nameParts.slice(1).join(" ") || firstName;
 
-  let applicantId = worker.onfidoApplicantId;
-  if (!applicantId) {
-    const applicant = await createApplicant(firstName, lastName, dateOfBirth);
-    applicantId = applicant.id;
+  const returnUrl = `${getAppUrl()}/api/workers/me/verification/id/return`;
+
+  let inquiryId = worker.personaInquiryId;
+  let oneTimeLink: string | null;
+  if (!inquiryId) {
+    const inquiry = await createInquiry(firstName, lastName, dateOfBirth, returnUrl);
+    inquiryId = inquiry.id;
+    oneTimeLink = inquiry.oneTimeLink;
+  } else {
+    oneTimeLink = await generateOneTimeLink(inquiryId);
   }
 
-  await uploadDocument(applicantId, documentFront, "front");
-  const documentBack = form?.get("documentBack");
-  if (documentBack instanceof File) {
-    await uploadDocument(applicantId, documentBack, "back");
+  if (!oneTimeLink) {
+    return NextResponse.json({ error: "persona_link_unavailable" }, { status: 502 });
   }
-  await uploadLivePhoto(applicantId, livePhoto);
-
-  const check = await createCheck(applicantId);
 
   const updated = await db.workerProfile.update({
     where: { id: worker.id },
     data: {
-      onfidoApplicantId: applicantId,
-      onfidoCheckId: check.id,
+      personaInquiryId: inquiryId,
       idVerificationStatus: "pending",
       idVerificationSubmittedAt: new Date(),
     },
   });
 
-  return NextResponse.json({ worker: updated });
+  return NextResponse.json({ worker: updated, url: oneTimeLink });
 }

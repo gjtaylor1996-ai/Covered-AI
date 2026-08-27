@@ -48,18 +48,23 @@ forever because there's no Stripe account behind `STRIPE_SECRET_KEY`.
 
 **Later, for real production use:** you'll need to activate the Stripe account (business details, bank account) and switch to live keys — that's a bigger step than this checklist covers, and shouldn't happen before the legal items in section 4 are resolved.
 
-## 2. Onfido — required for ID verification (Phase 4) to resolve automatically
+## 2. Persona — required for ID verification (Phase 4) to resolve automatically
 
-Right now, ID verification submissions fail immediately because
-`ONFIDO_API_TOKEN` is empty.
+Onfido was the spec's original pick, but after Onfido's acquisition by
+Entrust, API access now needs a sales-led enterprise signup with no
+self-serve sandbox left — so this app uses **Persona** instead, in the
+same role. Right now, ID verification submissions fail immediately
+because `PERSONA_API_KEY` is empty.
 
-1. Go to **[onfido.com](https://onfido.com)** and sign up — self-serve, sandbox/test mode, no sales call needed.
-2. **Dashboard → Developers → API tokens** — copy the **test** token.
-3. In `.env`:
+1. Go to **[withpersona.com](https://withpersona.com)** and sign up — self-serve, Sandbox environment, no sales call needed.
+2. In the Sandbox environment, create an **Inquiry Template** (any government-ID + selfie template works) and copy its id (starts `itmpl_`).
+3. **Dashboard → (Sandbox) → API keys** — copy a key.
+4. In `.env`:
    ```
-   ONFIDO_API_TOKEN="test_..."
+   PERSONA_API_KEY="..."
+   PERSONA_INQUIRY_TEMPLATE_ID="itmpl_..."
    ```
-4. Webhook setup needs your dev server to be reachable from the internet (Onfido can't call `localhost`). Install [ngrok](https://ngrok.com/download) (free tier is fine), then:
+5. Webhook setup needs your dev server to be reachable from the internet (Persona can't call `localhost`). Install [ngrok](https://ngrok.com/download) (free tier is fine), then:
    ```bash
    ngrok http 3000
    ```
@@ -67,13 +72,13 @@ Right now, ID verification submissions fail immediately because
    ```
    APP_URL="https://abcd1234.ngrok-free.app"
    ```
-5. **Onfido Dashboard → Developers → Webhooks** — add a webhook pointed at `{APP_URL}/api/webhooks/onfido` (using the ngrok URL from step 4), subscribed to the `check.completed` event. Copy its signing token into `.env`:
+6. **Persona Dashboard → (Sandbox) → Webhooks** — add a webhook pointed at `{APP_URL}/api/webhooks/persona` (using the ngrok URL from step 5), subscribed to at least the `inquiry.approved` event. Copy its secret into `.env`:
    ```
-   ONFIDO_WEBHOOK_TOKEN="..."
+   PERSONA_WEBHOOK_SECRET="wbhsec_..."
    ```
-6. Restart `npm run dev` (keep `ngrok` running in its own terminal alongside it). Sign up as a worker, fill in the ID verification form with any image files — Onfido's sandbox accepts arbitrary test images and returns a result (usually "clear") within seconds.
+7. Restart `npm run dev` (keep `ngrok` running in its own terminal alongside it). Sign up as a worker, enter a date of birth, and click "Start ID verification" — you'll be redirected to Persona's hosted flow, which accepts arbitrary test images in Sandbox and returns a result (usually "approved") within seconds.
 
-Note: `ngrok`'s free-tier URL changes every time you restart it, so you'll need to re-do step 5 (or step 4+5) each time you restart `ngrok` for local testing. This is only a local-dev inconvenience — in staging/production, `APP_URL` is your real deployed domain and stays stable.
+Note: `ngrok`'s free-tier URL changes every time you restart it, so you'll need to re-do step 6 (or step 5+6) each time you restart `ngrok` for local testing. This is only a local-dev inconvenience — in staging/production, `APP_URL` is your real deployed domain and stays stable.
 
 ## 3. Admin account — required to review verifications and resolve disputes
 

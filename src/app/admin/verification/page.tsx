@@ -15,7 +15,7 @@ interface QueueWorker {
   rightToWorkDob: string | null;
   rightToWorkSubmittedAt: string | null;
   idVerificationStatus: string;
-  onfidoCheckId: string | null;
+  personaInquiryId: string | null;
   idVerificationSubmittedAt: string | null;
   dbsStatus: string;
   dbsApplicationRef: string | null;
@@ -78,9 +78,9 @@ export default function AdminVerificationPage() {
       </p>
       <h1>Verification queue</h1>
       <p style={{ color: "#555" }}>
-        ID verification resolves automatically via Onfido except when it comes back
-        &quot;consider&quot; — right to work and DBS always land here, since neither has a
-        self-serve API to check automatically.
+        ID verification resolves automatically via Persona except when it comes back
+        anything other than &quot;approved&quot; — right to work and DBS always land here,
+        since neither has a self-serve API to check automatically.
       </p>
 
       {error && <p style={{ color: "crimson" }}>{error}</p>}
@@ -108,7 +108,7 @@ export default function AdminVerificationPage() {
               {w.idVerificationStatus === "pending" && (
                 <div style={{ marginTop: "0.5rem" }}>
                   {FIELD_LABELS.idVerificationStatus}: pending
-                  {w.onfidoCheckId && <> — Onfido check {w.onfidoCheckId}</>}
+                  {w.personaInquiryId && <> — Persona inquiry {w.personaInquiryId}</>}
                   <DecisionButtons
                     busy={busyKey === `${w.id}:idVerificationStatus`}
                     onDecide={(status) => decide(w.id, "idVerificationStatus", status)}

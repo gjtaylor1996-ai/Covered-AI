@@ -91,21 +91,22 @@ export function VerificationPanel() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const form = new FormData(e.currentTarget);
-    form.set("dateOfBirth", idDob);
-    const res = await fetch("/api/workers/me/verification/id", { method: "POST", body: form });
+    const res = await fetch("/api/workers/me/verification/id", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dateOfBirth: idDob }),
+    });
+    const body = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
       setError(
         body.error === "resubmission_cooldown"
           ? "Please wait before resubmitting."
-          : "Could not submit ID verification — check your Stripe/Onfido setup in .env."
+          : "Could not start ID verification — check your Persona setup in .env."
       );
       return;
     }
-    setNotice("ID submitted — awaiting result.");
-    await load();
+    window.location.href = body.url;
   }
 
   async function submitRtw(e: React.FormEvent) {
@@ -214,19 +215,14 @@ export function VerificationPanel() {
       <p>ID verification: <strong>{profile.idVerificationStatus}</strong></p>
       {profile.idVerificationStatus !== "verified" && (
         <form onSubmit={submitId} style={{ display: "grid", gap: "0.5rem" }}>
+          <p style={{ color: "#555", margin: 0 }}>
+            You&apos;ll be redirected to Persona to scan your ID and take a selfie.
+          </p>
           <label>
             Date of birth
             <input type="date" required value={idDob} onChange={(e) => setIdDob(e.target.value)} style={{ display: "block" }} />
           </label>
-          <label>
-            Passport / photo ID (front)
-            <input type="file" name="documentFront" accept="image/*" required style={{ display: "block" }} />
-          </label>
-          <label>
-            Selfie
-            <input type="file" name="livePhoto" accept="image/*" required style={{ display: "block" }} />
-          </label>
-          <button type="submit" disabled={busy}>Submit ID verification</button>
+          <button type="submit" disabled={busy}>Start ID verification</button>
         </form>
       )}
 
