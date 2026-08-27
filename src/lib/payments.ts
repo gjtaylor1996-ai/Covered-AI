@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { getBusinessRules } from "@/config/business-rules";
 import { getShiftWindow } from "@/lib/shift-time";
 import { getStripe } from "@/lib/stripe";
-import type { Payment, Shift } from "@prisma/client";
+import type { Payment, Shift, Venue } from "@prisma/client";
 
 // Phase 3 (spec §8.1) — "money actually moves, not just gets logged."
 // Split-payment pattern from spec §5: platform charges the venue
@@ -13,11 +13,13 @@ import type { Payment, Shift } from "@prisma/client";
 // worker's payout account are on opposite sides of the transaction.
 
 export function computeShiftAmounts(
-  shift: Pick<Shift, "startTime" | "endTime" | "hourlyRate">
+  shift: Pick<Shift, "startTime" | "endTime" | "hourlyRate">,
+  venue?: Pick<Venue, "commissionRateOverride">
 ) {
   const { start, end } = getShiftWindow(shift as Shift);
   const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-  const { commissionRate } = getBusinessRules();
+  const commissionRate =
+    venue?.commissionRateOverride ?? getBusinessRules().commissionRate;
 
   const workerAmountCents = Math.round(shift.hourlyRate * hours * 100);
   const commissionAmountCents = Math.round(workerAmountCents * commissionRate);
@@ -26,10 +28,10 @@ export function computeShiftAmounts(
   return { workerAmountCents, commissionAmountCents, totalAmountCents };
 }
 
-async function getOrCreatePayment(shift: Shift): Promise<Payment> {
+async function getOrCreatePayment(shift: Shift, venue: Venue): Promise<Payment> {
   const existing = await db.payment.findUnique({ where: { shiftId: shift.id } });
   if (existing) return existing;
-  const amounts = computeShiftAmounts(shift);
+  const amounts = computeShiftAmounts(shift, venue);
   return db.payment.create({
     data: { shiftId: shift.id, ...amounts, status: "pending_setup" },
   });
@@ -47,16 +49,15 @@ async function getOrCreatePayment(shift: Shift): Promise<Payment> {
  */
 export async function attemptShiftPayment(shiftId: string): Promise<Payment> {
   const shift = await db.shift.findUniqueOrThrow({ where: { id: shiftId } });
-  let payment = await getOrCreatePayment(shift);
-
-  if (payment.status === "charged" || payment.status === "paid_out") {
-    return payment; // already handled — never double-charge
-  }
-
   const [venue, worker] = await Promise.all([
     db.venue.findUniqueOrThrow({ where: { id: shift.venueId } }),
     db.workerProfile.findUniqueOrThrow({ where: { id: shift.workerId! } }),
   ]);
+  let payment = await getOrCreatePayment(shift, venue);
+
+  if (payment.status === "charged" || payment.status === "paid_out") {
+    return payment; // already handled — never double-charge
+  }
 
   if (!venue.stripeCustomerId || !worker.stripeConnectAccountId || !worker.bankAccountConnected) {
     return db.payment.update({
