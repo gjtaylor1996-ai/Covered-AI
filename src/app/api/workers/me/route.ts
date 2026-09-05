@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
   if (!worker) {
     return NextResponse.json({ error: "no_worker_profile" }, { status: 403 });
   }
-  return NextResponse.json({ worker });
+  const cv = await db.workerCv.findUnique({
+    where: { workerId: worker.id },
+    select: { fileName: true },
+  });
+  return NextResponse.json({ worker: { ...worker, cvFileName: cv?.fileName ?? null } });
 }
 
 const dayAvailabilitySchema = z.object({

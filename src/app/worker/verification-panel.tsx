@@ -14,6 +14,7 @@ interface WorkerProfileFull {
   rightToWorkStatus: string;
   idVerificationStatus: string;
   dbsStatus: string;
+  cvFileName: string | null;
 }
 
 const DAYS: (keyof WeeklyAvailability)[] = [
@@ -129,6 +130,46 @@ export function VerificationPanel() {
       return;
     }
     setNotice("Share code submitted — an admin will confirm it shortly.");
+    await load();
+  }
+
+  async function uploadCv(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const input = e.currentTarget.elements.namedItem("cv") as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    setError(null);
+    const form = new FormData();
+    form.set("cv", file);
+    const res = await fetch("/api/workers/me/cv", { method: "POST", body: form });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(
+        body.error === "pdf_only"
+          ? "CV must be a PDF."
+          : body.error === "file_too_large"
+            ? "That file is too large (4MB max)."
+            : "Could not upload CV."
+      );
+      return;
+    }
+    input.value = "";
+    setNotice("CV uploaded.");
+    await load();
+  }
+
+  async function removeCv() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/workers/me/cv", { method: "DELETE" });
+    setBusy(false);
+    if (!res.ok) {
+      setError("Could not remove CV.");
+      return;
+    }
+    setNotice("CV removed.");
     await load();
   }
 
@@ -270,6 +311,24 @@ export function VerificationPanel() {
           )}
         </>
       )}
+
+      <hr style={{ margin: "1rem 0" }} />
+
+      <p>
+        CV <span style={{ color: "#555" }}>(optional — not used for shift matching, purely for venues who want it)</span>:{" "}
+        <strong>{profile.cvFileName ?? "none uploaded"}</strong>
+      </p>
+      <form onSubmit={uploadCv} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <input type="file" name="cv" accept="application/pdf" />
+        <button type="submit" disabled={busy}>
+          {profile.cvFileName ? "Replace" : "Upload"}
+        </button>
+        {profile.cvFileName && (
+          <button type="button" disabled={busy} onClick={removeCv}>
+            Remove
+          </button>
+        )}
+      </form>
     </section>
   );
 }

@@ -232,6 +232,7 @@ model WorkerProfile {
   shifts          Shift[]
   favouritedBy    Favourite[]
   hireRequests    HireRequest[]
+  cv              WorkerCv?
 
   @@map("worker_profiles")
 }
@@ -247,6 +248,24 @@ model Certification {
 
   @@index([workerId])
   @@map("certifications")
+}
+
+// Not in spec — a CV is deliberately optional supplementary info, not
+// part of the core matching signal (the product's own pitch, per the
+// prototypes' onboarding copy, is the Reliability Score "not a CV
+// claim"). Kept in its own table rather than on WorkerProfile directly:
+// most queries fetch a WorkerProfile without a `select`, and a Bytes
+// column there would get pulled into every one of them.
+model WorkerCv {
+  id         String        @id @default(uuid())
+  workerId   String        @unique
+  worker     WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  fileName   String
+  mimeType   String
+  data       Bytes
+  uploadedAt DateTime      @default(now())
+
+  @@map("worker_cvs")
 }
 
 // --- Venue side (corrected multi-user model, spec §8.3) -------------------

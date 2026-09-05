@@ -39,6 +39,7 @@ interface Candidate {
   isFavourite: boolean;
   matchScore: number;
   isNewWorker: boolean;
+  hasCv: boolean;
 }
 
 // Quick actions from the prototype (covered.html, applyQuickAction) —
@@ -280,6 +281,14 @@ export default function VenueShiftDetailPage() {
                       <span style={{ color: "#a55", marginLeft: "0.4rem" }}>
                         · New — capped shift value
                       </span>
+                    )}
+                    {c.hasCv && (
+                      <>
+                        {" "}
+                        <a href={`/api/workers/${c.id}/cv`} target="_blank" rel="noreferrer">
+                          View CV
+                        </a>
+                      </>
                     )}
                   </span>
                   <button disabled={busy} onClick={() => handleOffer(c.id)}>

@@ -27,6 +27,7 @@ export async function GET(
       yearsExperience: true,
       hourlyRate: true,
       postcode: true,
+      cv: { select: { id: true } },
     },
   });
   if (!worker) {
@@ -34,10 +35,12 @@ export async function GET(
   }
 
   const breakdown = await computeReliabilityScore(worker.id);
+  const { cv, ...rest } = worker;
 
   return NextResponse.json({
     worker: {
-      ...worker,
+      ...rest,
+      hasCv: cv !== null,
       reliabilityScore: breakdown.reliabilityScore,
       reliabilityTier: breakdown.reliabilityTier,
       summary: breakdown.plainLanguageSummary,

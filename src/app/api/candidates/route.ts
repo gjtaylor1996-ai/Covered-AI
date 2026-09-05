@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
       reliabilityTier: true,
       shiftsCompleted: true,
       favouritedBy: { where: { venueId: membership.venueId }, select: { id: true } },
+      cv: { select: { id: true } },
     },
   });
 
@@ -102,10 +103,11 @@ export async function GET(request: NextRequest) {
   const { minShiftsForScore, newWorkerMaxShiftValueCents } = getBusinessRules();
   const withMatchScore = filtered
     .map((w) => {
-      const { availability: _availability, favouritedBy, ...rest } = w;
+      const { availability: _availability, favouritedBy, cv, ...rest } = w;
       return {
         ...rest,
         isFavourite: favouritedBy.length > 0,
+        hasCv: cv !== null,
         matchScore: computeMatchScore(w),
         // Cold-start flag, not spec: this worker can't be offered a
         // shift worth more than newWorkerMaxShiftValueCents (enforced
