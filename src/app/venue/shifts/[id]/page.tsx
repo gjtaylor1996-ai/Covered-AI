@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { formatTime12h } from "@/components/TimeInput";
 
 interface PaymentInfo {
   status: string;
@@ -11,6 +12,8 @@ interface PaymentInfo {
   commissionAmountCents: number;
   totalAmountCents: number;
   failureReason: string | null;
+  venueChargeFailed: boolean;
+  venueChargeFailureReason: string | null;
 }
 
 interface ShiftDetail {
@@ -222,8 +225,8 @@ export default function VenueShiftDetailPage() {
       </p>
       <h1>{WORKER_ROLE_LABELS[shift.role]}</h1>
       <p>
-        {new Date(shift.date).toLocaleDateString("en-GB")}, {shift.startTime}–
-        {shift.endTime} · £{shift.hourlyRate}/hr
+        {new Date(shift.date).toLocaleDateString("en-GB")}, {formatTime12h(shift.startTime)}–
+        {formatTime12h(shift.endTime)} · £{shift.hourlyRate}/hr
       </p>
       <p>
         Status: <strong>{shift.status}</strong>
@@ -367,7 +370,7 @@ export default function VenueShiftDetailPage() {
         <section>
           <h2>Payment</h2>
           <p>
-            Status: <strong>{shift.payment.status}</strong> — £
+            Worker payout: <strong>{shift.payment.status}</strong> — £
             {(shift.payment.totalAmountCents / 100).toFixed(2)} total (£
             {(shift.payment.workerAmountCents / 100).toFixed(2)} to worker, £
             {(shift.payment.commissionAmountCents / 100).toFixed(2)} commission)
@@ -375,7 +378,20 @@ export default function VenueShiftDetailPage() {
           {shift.payment.failureReason && (
             <p style={{ color: "#a55" }}>{shift.payment.failureReason}</p>
           )}
-          {(shift.payment.status === "pending_setup" || shift.payment.status === "failed") && (
+          <p>
+            Your card charge:{" "}
+            <strong>{shift.payment.venueChargeFailed ? "failed" : "succeeded"}</strong>
+          </p>
+          {shift.payment.venueChargeFailed && (
+            <p style={{ color: "#a55" }}>
+              {shift.payment.venueChargeFailureReason}
+              {shift.payment.status === "paid_out" &&
+                " The worker has already been paid for this shift regardless — this only affects your card."}
+            </p>
+          )}
+          {(shift.payment.status === "pending_setup" ||
+            shift.payment.status === "failed" ||
+            shift.payment.venueChargeFailed) && (
             <button disabled={busy} onClick={handleRetryCharge}>
               Retry payment
             </button>

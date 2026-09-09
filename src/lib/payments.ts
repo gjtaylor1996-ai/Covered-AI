@@ -38,14 +38,24 @@ async function getOrCreatePayment(shift: Shift, venue: Venue): Promise<Payment> 
 }
 
 /**
- * Attempts to charge the venue and pay out the worker for a completed
- * shift. Called inline from the complete endpoint (no job queue yet —
- * same pattern as score recalculation) and again from
- * POST /shifts/:id/charge as a manual retry. Never throws: a failure
- * here shouldn't break shift completion, since the booking loop has to
- * stay usable even before both sides have finished Stripe onboarding
- * (spec §8.1 lets verification/payments stay partly manual during a
- * pilot).
+ * Charges the venue and pays out the worker for a completed shift — as
+ * two independent operations, not a sequential pipeline. Called inline
+ * from the complete endpoint (no job queue yet — same pattern as score
+ * recalculation) and again from POST /shifts/:id/charge as a manual
+ * retry. Never throws: a failure here shouldn't break shift completion.
+ *
+ * Regulation 15 of the Conduct of Employment Agencies and Employment
+ * Businesses Regulations 2003 requires Covered to undertake to pay a
+ * worker for a shift "whether or not" the venue has paid Covered — so
+ * the worker payout is attempted regardless of whether the venue charge
+ * succeeded, not gated behind it. A failed venue charge becomes a
+ * collections problem for Covered (venueChargeFailed), never the
+ * worker's problem. See Terms of Service, Section 5.
+ *
+ * Each Stripe call's idempotency key includes an attempt counter
+ * (chargeAttempts / transferAttempts), not just the shift id — a static
+ * key would make every retry after a genuine failure replay Stripe's
+ * cached failure response forever instead of actually retrying.
  */
 export async function attemptShiftPayment(shiftId: string): Promise<Payment> {
   const shift = await db.shift.findUniqueOrThrow({ where: { id: shiftId } });
@@ -54,73 +64,88 @@ export async function attemptShiftPayment(shiftId: string): Promise<Payment> {
     db.workerProfile.findUniqueOrThrow({ where: { id: shift.workerId! } }),
   ]);
   let payment = await getOrCreatePayment(shift, venue);
+  const stripe = getStripe();
 
-  if (payment.status === "charged" || payment.status === "paid_out") {
-    return payment; // already handled — never double-charge
-  }
-
-  if (!venue.stripeCustomerId || !worker.stripeConnectAccountId || !worker.bankAccountConnected) {
+  // The worker payout is the non-negotiable leg — if the worker isn't
+  // even payable yet, there's nothing to attempt on either side.
+  if (!worker.stripeConnectAccountId || !worker.bankAccountConnected) {
+    if (payment.status === "paid_out") return payment;
     return db.payment.update({
       where: { id: payment.id },
-      data: {
-        status: "pending_setup",
-        failureReason: !venue.stripeCustomerId
-          ? "Venue has not added a payment method yet."
-          : "Worker has not finished payout onboarding yet.",
-      },
+      data: { status: "pending_setup", failureReason: "Worker has not finished payout onboarding yet." },
     });
   }
 
-  try {
-    const stripe = getStripe();
-    payment = await db.payment.update({ where: { id: payment.id }, data: { status: "charging" } });
+  // --- Venue charge: independent, allowed to fail without blocking the worker's payout below ---
+  if (!payment.stripePaymentIntentId || payment.venueChargeFailed) {
+    if (!venue.stripeCustomerId) {
+      payment = await db.payment.update({
+        where: { id: payment.id },
+        data: { venueChargeFailed: true, venueChargeFailureReason: "Venue has not added a payment method yet." },
+      });
+    } else {
+      try {
+        const customer = await stripe.customers.retrieve(venue.stripeCustomerId);
+        const defaultPaymentMethod =
+          !("deleted" in customer) &&
+          typeof customer.invoice_settings?.default_payment_method === "string"
+            ? customer.invoice_settings.default_payment_method
+            : null;
 
-    let paymentIntentId = payment.stripePaymentIntentId;
-    if (!paymentIntentId) {
-      const customer = await stripe.customers.retrieve(venue.stripeCustomerId);
-      const defaultPaymentMethod =
-        !("deleted" in customer) &&
-        typeof customer.invoice_settings?.default_payment_method === "string"
-          ? customer.invoice_settings.default_payment_method
-          : null;
-      if (!defaultPaymentMethod) {
-        return db.payment.update({
+        if (!defaultPaymentMethod) {
+          payment = await db.payment.update({
+            where: { id: payment.id },
+            data: { venueChargeFailed: true, venueChargeFailureReason: "Venue has no default payment method." },
+          });
+        } else {
+          const attempt = payment.chargeAttempts + 1;
+          const intent = await stripe.paymentIntents.create(
+            {
+              amount: payment.totalAmountCents,
+              currency: payment.currency,
+              customer: venue.stripeCustomerId,
+              payment_method: defaultPaymentMethod,
+              off_session: true,
+              confirm: true,
+              description: `Covered shift ${shift.id}`,
+            },
+            { idempotencyKey: `charge_${shift.id}_${attempt}` }
+          );
+
+          payment = await db.payment.update({
+            where: { id: payment.id },
+            data:
+              intent.status === "succeeded"
+                ? {
+                    stripePaymentIntentId: intent.id,
+                    chargeAttempts: attempt,
+                    venueChargeFailed: false,
+                    venueChargeFailureReason: null,
+                  }
+                : {
+                    stripePaymentIntentId: intent.id,
+                    chargeAttempts: attempt,
+                    venueChargeFailed: true,
+                    venueChargeFailureReason: `PaymentIntent ended in status "${intent.status}" — likely needs 3DS authentication, which off-session charges can't complete automatically.`,
+                  },
+          });
+        }
+      } catch (err) {
+        const attempt = payment.chargeAttempts + 1;
+        const message = err instanceof Error ? err.message : "Unknown Stripe error charging the venue.";
+        payment = await db.payment.update({
           where: { id: payment.id },
-          data: { status: "pending_setup", failureReason: "Venue has no default payment method." },
-        });
-      }
-
-      const intent = await stripe.paymentIntents.create(
-        {
-          amount: payment.totalAmountCents,
-          currency: payment.currency,
-          customer: venue.stripeCustomerId,
-          payment_method: defaultPaymentMethod,
-          off_session: true,
-          confirm: true,
-          description: `Covered shift ${shift.id}`,
-        },
-        { idempotencyKey: `charge_${shift.id}` }
-      );
-      paymentIntentId = intent.id;
-
-      if (intent.status !== "succeeded") {
-        return db.payment.update({
-          where: { id: payment.id },
-          data: {
-            status: "failed",
-            stripePaymentIntentId: paymentIntentId,
-            failureReason: `PaymentIntent ended in status "${intent.status}" — likely needs 3DS authentication, which off-session charges can't complete automatically.`,
-          },
+          data: { chargeAttempts: attempt, venueChargeFailed: true, venueChargeFailureReason: message },
         });
       }
     }
+  }
 
-    payment = await db.payment.update({
-      where: { id: payment.id },
-      data: { status: "charged", stripePaymentIntentId: paymentIntentId },
-    });
+  // --- Worker payout: always attempted if not already paid, independent of the venue charge above ---
+  if (payment.status === "paid_out") return payment;
 
+  try {
+    const attempt = payment.transferAttempts + 1;
     const transfer = await stripe.transfers.create(
       {
         amount: payment.workerAmountCents,
@@ -129,18 +154,18 @@ export async function attemptShiftPayment(shiftId: string): Promise<Payment> {
         transfer_group: `shift_${shift.id}`,
         description: `Covered shift ${shift.id} payout`,
       },
-      { idempotencyKey: `transfer_${shift.id}` }
+      { idempotencyKey: `transfer_${shift.id}_${attempt}` }
     );
-
     return db.payment.update({
       where: { id: payment.id },
-      data: { status: "paid_out", stripeTransferId: transfer.id },
+      data: { status: "paid_out", stripeTransferId: transfer.id, transferAttempts: attempt, failureReason: null },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown Stripe error";
+    const attempt = payment.transferAttempts + 1;
+    const message = err instanceof Error ? err.message : "Unknown Stripe error paying the worker.";
     return db.payment.update({
       where: { id: payment.id },
-      data: { status: "failed", failureReason: message },
+      data: { status: "failed", failureReason: message, transferAttempts: attempt },
     });
   }
 }

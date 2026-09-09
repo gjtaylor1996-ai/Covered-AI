@@ -26,10 +26,10 @@ export async function classifyDispute(
     ? await db.shift.findUnique({ where: { id: feedback.shiftId }, include: { payment: true } })
     : null;
   const payment = shift?.payment;
-  if (payment && (payment.status === "charged" || payment.status === "paid_out")) {
+  if (payment && payment.stripePaymentIntentId && !payment.venueChargeFailed) {
     return {
       checkType: "objective",
-      evidence: `Stripe PaymentIntent ${payment.stripePaymentIntentId} confirms this shift was charged at ${payment.updatedAt.toISOString()} (status: ${payment.status}).`,
+      evidence: `Stripe PaymentIntent ${payment.stripePaymentIntentId} confirms this shift was charged at ${payment.updatedAt.toISOString()} (payment status: ${payment.status}).`,
     };
   }
 

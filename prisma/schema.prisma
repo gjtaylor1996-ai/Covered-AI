@@ -364,10 +364,23 @@ model Payment {
   commissionAmountCents  Int
   totalAmountCents       Int
   currency               String        @default("gbp")
+  // status tracks the worker-payout leg specifically — see payments.ts.
+  // The regulation 15 undertaking is to pay the worker whether or not the
+  // venue has paid Covered, so this is no longer gated on the venue
+  // charge succeeding.
   status                 PaymentStatus @default(pending_setup)
   stripePaymentIntentId  String?
   stripeTransferId       String?
-  failureReason          String?
+  failureReason          String?       // why the worker payout itself failed (status = failed)
+  // Venue charge is tracked independently — it can fail without blocking
+  // the worker's payout above. venueChargeFailed = true with
+  // status = paid_out means: worker paid, venue charge still needs
+  // collecting, which is now a distinct, expected state rather than an
+  // edge case swallowed into a generic "failed".
+  venueChargeFailed        Boolean  @default(false)
+  venueChargeFailureReason String?
+  chargeAttempts            Int     @default(0) // idempotency-key suffix for venue charge retries
+  transferAttempts          Int     @default(0) // idempotency-key suffix for worker transfer retries
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 

@@ -39,7 +39,11 @@ export async function GET(request: NextRequest) {
         },
       }),
       db.payment.findMany({
-        where: { status: { in: ["charged", "paid_out"] } },
+        // GMV/revenue reflects venue charges actually collected, not
+        // whether the worker has been paid out yet — those are now
+        // independent (see payments.ts), so this filters on the venue
+        // charge succeeding, not on payment.status.
+        where: { stripePaymentIntentId: { not: null }, venueChargeFailed: false },
         select: { totalAmountCents: true, commissionAmountCents: true },
       }),
     ]);
