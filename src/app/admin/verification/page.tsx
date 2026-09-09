@@ -11,8 +11,11 @@ interface QueueWorker {
   name: string;
   primaryRole: WorkerRoleKey;
   rightToWorkStatus: string;
+  rightToWorkMethod: string | null;
   rightToWorkShareCode: string | null;
   rightToWorkDob: string | null;
+  rightToWorkNationality: string | null;
+  rightToWorkPassportNumber: string | null;
   rightToWorkSubmittedAt: string | null;
   idVerificationStatus: string;
   personaInquiryId: string | null;
@@ -119,7 +122,7 @@ export default function AdminVerificationPage() {
               {w.rightToWorkStatus === "pending" && (
                 <div style={{ marginTop: "0.5rem" }}>
                   {FIELD_LABELS.rightToWorkStatus}: pending
-                  {w.rightToWorkShareCode && (
+                  {w.rightToWorkMethod === "share_code" && w.rightToWorkShareCode && (
                     <>
                       {" "}
                       — share code <strong>{w.rightToWorkShareCode}</strong>, DOB{" "}
@@ -133,6 +136,17 @@ export default function AdminVerificationPage() {
                         gov.uk/view-right-to-work
                       </a>
                       .
+                    </>
+                  )}
+                  {w.rightToWorkMethod === "manual_document" && (
+                    <>
+                      {" "}
+                      — <strong>manual passport check needed</strong>: {w.rightToWorkNationality} citizen,
+                      passport <strong>{w.rightToWorkPassportNumber}</strong>, DOB{" "}
+                      {w.rightToWorkDob && new Date(w.rightToWorkDob).toLocaleDateString("en-GB")}.
+                      British/Irish citizens aren&apos;t issued a share code — arrange to physically
+                      inspect this worker&apos;s original passport in person before confirming. A photo
+                      or scan is not sufficient evidence for this check.
                     </>
                   )}
                   <DecisionButtons

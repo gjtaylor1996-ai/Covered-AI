@@ -64,6 +64,17 @@ enum DbsStatus {
   not_required
 }
 
+// British and Irish citizens are never issued a Home Office share code
+// — they're not subject to immigration control, so the online checking
+// service doesn't apply to them at all. They're checked instead via a
+// manual document check (an admin physically inspects the original
+// passport) or a certified IDSP digital check. share_code remains the
+// only method for everyone else (visa/BRP/eVisa holders).
+enum RightToWorkMethod {
+  share_code
+  manual_document
+}
+
 enum CertType {
   food_hygiene_l2
   food_hygiene_l3
@@ -231,8 +242,16 @@ model WorkerProfile {
   // a pilot.
   personaInquiryId             String?   @unique
   idVerificationSubmittedAt   DateTime?
-  rightToWorkShareCode        String?
+  rightToWorkMethod           RightToWorkMethod?
+  rightToWorkShareCode        String?   // share_code method only
   rightToWorkDob               DateTime?
+  // manual_document method only — British/Irish citizens. Recorded so
+  // an admin knows who to physically check a passport against; the
+  // check itself is an in-person, out-of-band action this field can't
+  // replace (a photo isn't sufficient evidence for this specific
+  // method — see verification.ts).
+  rightToWorkNationality       String?
+  rightToWorkPassportNumber    String?
   rightToWorkSubmittedAt      DateTime?
   dbsApplicationRef           String?
   dbsSubmittedAt               DateTime?

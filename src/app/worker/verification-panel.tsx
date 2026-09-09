@@ -42,8 +42,11 @@ export function VerificationPanel() {
   const [availability, setAvailability] = useState<WeeklyAvailability | null>(null);
 
   const [idDob, setIdDob] = useState("");
+  const [rtwMethod, setRtwMethod] = useState<"share_code" | "manual_document">("share_code");
   const [shareCode, setShareCode] = useState("");
   const [rtwDob, setRtwDob] = useState("");
+  const [rtwNationality, setRtwNationality] = useState<"British" | "Irish">("British");
+  const [rtwPassportNumber, setRtwPassportNumber] = useState("");
   const [dbsRef, setDbsRef] = useState("");
 
   async function load() {
@@ -118,7 +121,16 @@ export function VerificationPanel() {
     const res = await fetch("/api/workers/me/verification/right-to-work", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shareCode, dateOfBirth: rtwDob }),
+      body: JSON.stringify(
+        rtwMethod === "share_code"
+          ? { method: "share_code", shareCode, dateOfBirth: rtwDob }
+          : {
+              method: "manual_document",
+              nationality: rtwNationality,
+              passportNumber: rtwPassportNumber,
+              dateOfBirth: rtwDob,
+            }
+      ),
     });
     setBusy(false);
     if (!res.ok) {
@@ -126,11 +138,17 @@ export function VerificationPanel() {
       setError(
         body.error === "resubmission_cooldown"
           ? "Please wait before resubmitting."
-          : "Could not submit — check the share code format (9 characters)."
+          : rtwMethod === "share_code"
+          ? "Could not submit — check the share code format (9 characters)."
+          : "Could not submit — check the passport number and date of birth."
       );
       return;
     }
-    setNotice("Share code submitted — an admin will confirm it shortly.");
+    setNotice(
+      rtwMethod === "share_code"
+        ? "Share code submitted — an admin will confirm it shortly."
+        : "Details submitted — an admin will arrange to check your original passport in person."
+    );
     await load();
   }
 
@@ -292,27 +310,83 @@ export function VerificationPanel() {
       <p>Right to work: <strong>{profile.rightToWorkStatus}</strong></p>
       {profile.rightToWorkStatus !== "verified" && (
         <form onSubmit={submitRtw} style={{ display: "grid", gap: "0.5rem" }}>
-          <p style={{ color: "#555", margin: 0 }}>
-            Get a share code at{" "}
-            <a href="https://www.gov.uk/prove-right-to-work" target="_blank" rel="noreferrer">
-              gov.uk/prove-right-to-work
-            </a>.
-          </p>
-          <label>
-            Share code
-            <input
-              value={shareCode}
-              onChange={(e) => setShareCode(e.target.value)}
-              maxLength={9}
-              placeholder="e.g. W9ND2SGW3"
-              style={{ display: "block" }}
-            />
-          </label>
+          <div>
+            <label style={{ marginRight: "1rem" }}>
+              <input
+                type="radio"
+                name="rtwMethod"
+                checked={rtwMethod === "share_code"}
+                onChange={() => setRtwMethod("share_code")}
+              />{" "}
+              I have a share code
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="rtwMethod"
+                checked={rtwMethod === "manual_document"}
+                onChange={() => setRtwMethod("manual_document")}
+              />{" "}
+              I&apos;m a British or Irish citizen
+            </label>
+          </div>
+
+          {rtwMethod === "share_code" ? (
+            <>
+              <p style={{ color: "#555", margin: 0 }}>
+                Get a share code at{" "}
+                <a href="https://www.gov.uk/prove-right-to-work" target="_blank" rel="noreferrer">
+                  gov.uk/prove-right-to-work
+                </a>.
+              </p>
+              <label>
+                Share code
+                <input
+                  value={shareCode}
+                  onChange={(e) => setShareCode(e.target.value)}
+                  maxLength={9}
+                  placeholder="e.g. W9ND2SGW3"
+                  style={{ display: "block" }}
+                />
+              </label>
+            </>
+          ) : (
+            <>
+              <p style={{ color: "#555", margin: 0 }}>
+                British and Irish citizens aren&apos;t issued a share code. Enter your details below
+                and bring your original passport in — an admin will need to check it in person
+                before this can be verified.
+              </p>
+              <label>
+                Nationality
+                <select
+                  value={rtwNationality}
+                  onChange={(e) => setRtwNationality(e.target.value as "British" | "Irish")}
+                  style={{ display: "block" }}
+                >
+                  <option value="British">British</option>
+                  <option value="Irish">Irish</option>
+                </select>
+              </label>
+              <label>
+                Passport number
+                <input
+                  value={rtwPassportNumber}
+                  onChange={(e) => setRtwPassportNumber(e.target.value)}
+                  placeholder="e.g. 123456789"
+                  style={{ display: "block" }}
+                />
+              </label>
+            </>
+          )}
+
           <label>
             Date of birth
             <input type="date" required value={rtwDob} onChange={(e) => setRtwDob(e.target.value)} style={{ display: "block" }} />
           </label>
-          <button type="submit" disabled={busy}>Submit share code</button>
+          <button type="submit" disabled={busy}>
+            {rtwMethod === "share_code" ? "Submit share code" : "Submit details"}
+          </button>
         </form>
       )}
 
