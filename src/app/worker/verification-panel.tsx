@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WORKER_ROLE_LABELS, type WeeklyAvailability, type WorkerRoleKey } from "@/lib/types";
+import { TimeInput } from "@/components/TimeInput";
 
 interface WorkerProfileFull {
   id: string;
@@ -229,20 +230,39 @@ export function VerificationPanel() {
           {availability && (
             <div>
               Available on
-              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+              <div style={{ display: "grid", gap: "0.4rem", marginTop: "0.25rem" }}>
                 {DAYS.map((day) => (
-                  <label key={day} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                    <input
-                      type="checkbox"
-                      checked={availability[day].enabled}
-                      onChange={(e) =>
-                        setAvailability((a) =>
-                          a ? { ...a, [day]: { ...a[day], enabled: e.target.checked } } : a
-                        )
-                      }
-                    />
-                    {day.slice(0, 3)}
-                  </label>
+                  <div key={day} style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.25rem", width: "3.5rem" }}>
+                      <input
+                        type="checkbox"
+                        checked={availability[day].enabled}
+                        onChange={(e) =>
+                          setAvailability((a) =>
+                            a ? { ...a, [day]: { ...a[day], enabled: e.target.checked } } : a
+                          )
+                        }
+                      />
+                      {day.slice(0, 3)}
+                    </label>
+                    {availability[day].enabled && (
+                      <>
+                        <TimeInput
+                          value={availability[day].start}
+                          onChange={(v) =>
+                            setAvailability((a) => (a ? { ...a, [day]: { ...a[day], start: v } } : a))
+                          }
+                        />
+                        <span>to</span>
+                        <TimeInput
+                          value={availability[day].end}
+                          onChange={(v) =>
+                            setAvailability((a) => (a ? { ...a, [day]: { ...a[day], end: v } } : a))
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>

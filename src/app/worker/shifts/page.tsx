@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { VerificationPanel } from "../verification-panel";
 import { HireRequestsPanel } from "../hire-requests-panel";
+import { formatTime12h } from "@/components/TimeInput";
 
 interface ShiftListItem {
   id: string;
@@ -213,7 +214,7 @@ export default function WorkerShiftsPage() {
                 <strong>{WORKER_ROLE_LABELS[shift.role]}</strong> at{" "}
                 {shift.venue.name} —{" "}
                 {new Date(shift.date).toLocaleDateString("en-GB")},{" "}
-                {shift.startTime}–{shift.endTime}, £{shift.hourlyRate}/hr
+                {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}, £{shift.hourlyRate}/hr
               </div>
               <div>
                 Status: {shift.status}

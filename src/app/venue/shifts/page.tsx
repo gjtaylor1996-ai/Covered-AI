@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { FavouritesPanel } from "../favourites-panel";
+import { TimeInput, formatTime12h } from "@/components/TimeInput";
 
 interface ShiftListItem {
   id: string;
@@ -173,23 +174,15 @@ export default function VenueShiftsPage() {
         </label>
         <label>
           Start time
-          <input
-            type="time"
-            required
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
+          <div style={{ marginTop: "0.25rem" }}>
+            <TimeInput value={startTime} onChange={setStartTime} />
+          </div>
         </label>
         <label>
           End time
-          <input
-            type="time"
-            required
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
+          <div style={{ marginTop: "0.25rem" }}>
+            <TimeInput value={endTime} onChange={setEndTime} />
+          </div>
         </label>
         <label>
           Hourly rate (£)
@@ -238,7 +231,7 @@ export default function VenueShiftsPage() {
                 </td>
                 <td>{new Date(shift.date).toLocaleDateString("en-GB")}</td>
                 <td>
-                  {shift.startTime}–{shift.endTime}
+                  {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}
                 </td>
                 <td>£{shift.hourlyRate}/hr</td>
                 <td>{shift.status}</td>
