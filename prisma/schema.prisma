@@ -6,7 +6,16 @@
 // spec first — this file and the TS interfaces in §1 must stay in sync.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" covers local Windows dev; rhel-openssl-3.0.x covers
+  // Netlify's Lambda-based function runtime (Linux) — without it, the
+  // client built locally only bundles a Windows query engine binary,
+  // which crashes every DB-touching request once deployed there.
+  // Vercel doesn't need this: it always runs a full `npm install` (and
+  // therefore `prisma generate`) inside its own Linux build container,
+  // so the binary always matches. Netlify's CLI deploy instead reuses
+  // whatever's already in local node_modules.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
