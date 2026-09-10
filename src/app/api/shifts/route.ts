@@ -49,11 +49,33 @@ export async function GET(request: NextRequest) {
     where: { workerId: worker.id },
     include: {
       venue: { select: { id: true, name: true } },
-      shiftFeedback: { select: { id: true } },
+      shiftFeedback: {
+        select: { id: true, confirmedAttendance: true, onTime: true, minutesLate: true },
+      },
     },
     orderBy: { date: "asc" },
   });
-  return NextResponse.json({ shifts });
+
+  // Attach each shift's own dispute (if any) — Dispute has no direct FK
+  // to ShiftFeedback (it's polymorphic via targetType/targetId), so this
+  // is a separate lookup rather than a Prisma include.
+  const feedbackIds = shifts.map((s) => s.shiftFeedback?.id).filter((id): id is string => Boolean(id));
+  const disputes = feedbackIds.length
+    ? await db.dispute.findMany({
+        where: { targetType: "shift_feedback", targetId: { in: feedbackIds } },
+        select: { targetId: true, status: true, checkType: true, evidence: true },
+      })
+    : [];
+  const disputeByFeedbackId = new Map(disputes.map((d) => [d.targetId, d]));
+
+  const shiftsWithDispute = shifts.map((shift) => ({
+    ...shift,
+    shiftFeedback: shift.shiftFeedback
+      ? { ...shift.shiftFeedback, dispute: disputeByFeedbackId.get(shift.shiftFeedback.id) ?? null }
+      : null,
+  }));
+
+  return NextResponse.json({ shifts: shiftsWithDispute });
 }
 
 /** Venue posts a new open shift. Permission matrix §8.4: owner/manager/staff. */

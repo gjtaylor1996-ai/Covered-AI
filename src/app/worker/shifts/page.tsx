@@ -30,7 +30,13 @@ interface ShiftListItem {
   status: string;
   respondBy: string | null;
   venue: { id: string; name: string };
-  shiftFeedback: { id: string } | null;
+  shiftFeedback: {
+    id: string;
+    confirmedAttendance: boolean;
+    onTime: boolean;
+    minutesLate: number | null;
+    dispute: { status: string; checkType: string | null; evidence: string | null } | null;
+  } | null;
 }
 
 interface ScoreBreakdown {
@@ -51,7 +57,6 @@ export default function WorkerShiftsPage() {
   const [disputingId, setDisputingId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeNote, setDisputeNote] = useState("");
-  const [disputedFeedback, setDisputedFeedback] = useState<Set<string>>(new Set());
 
   async function loadWorker() {
     const res = await fetch("/api/workers/me");
@@ -189,10 +194,10 @@ export default function WorkerShiftsPage() {
       );
       return;
     }
-    setDisputedFeedback((s) => new Set(s).add(feedbackId));
     setDisputingId(null);
     setDisputeReason("");
     setDisputeNote("");
+    await loadShifts();
   }
 
   const statusLabel: Record<string, string> = {
@@ -265,6 +270,14 @@ export default function WorkerShiftsPage() {
               <div className="shift-meta">
                 <span>📅 {new Date(shift.date).toLocaleDateString("en-GB")}</span>
                 <span>🕔 {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}</span>
+                {shift.status === "completed" && shift.shiftFeedback && (
+                  <span style={{ color: shift.shiftFeedback.onTime ? "var(--green)" : "var(--amber-deep)" }}>
+                    {shift.shiftFeedback.onTime ? "✓ On time" : `◐ ${shift.shiftFeedback.minutesLate ?? 0} min late`}
+                  </span>
+                )}
+                {shift.status === "no_show" && (
+                  <span style={{ color: "var(--red-deep)" }}>✕ No-show recorded</span>
+                )}
               </div>
               <span className={`badge ${statusLabel[shift.status] ?? "pending"}`}>{shift.status.replace("_", " ")}</span>
 
@@ -301,8 +314,29 @@ export default function WorkerShiftsPage() {
                   ))}
                 {shift.shiftFeedback &&
                   ["completed", "no_show"].includes(shift.status) &&
-                  (disputedFeedback.has(shift.shiftFeedback.id) ? (
-                    <span className="text-muted" style={{ fontSize: "12px" }}> Dispute submitted</span>
+                  (shift.shiftFeedback.dispute ? (
+                    shift.shiftFeedback.dispute.status === "pending_review" ? (
+                      <div style={{ marginTop: "8px" }}>
+                        <span className={`check-badge ${shift.shiftFeedback.dispute.checkType ?? "subjective"}`}>
+                          {shift.shiftFeedback.dispute.checkType === "objective" ? "Fast-track" : "Standard review"}
+                        </span>
+                        {shift.shiftFeedback.dispute.evidence && (
+                          <div className="check-evidence">{shift.shiftFeedback.dispute.evidence}</div>
+                        )}
+                        <div className="check-turnaround">
+                          A person still makes the final call on whether it counts against you — excluded from
+                          your score until then.
+                        </div>
+                      </div>
+                    ) : shift.shiftFeedback.dispute.status === "resolved_excluded" ? (
+                      <span className="resolved-tag excluded" style={{ marginTop: "8px" }}>
+                        Resolved — excluded from your score
+                      </span>
+                    ) : (
+                      <span className="resolved-tag stands" style={{ marginTop: "8px" }}>
+                        Resolved — record stands, included in your score
+                      </span>
+                    )
                   ) : disputingId === shift.id ? (
                     <div style={{ marginTop: "10px", display: "grid", gap: "8px" }}>
                       <input
@@ -323,8 +357,8 @@ export default function WorkerShiftsPage() {
                       </div>
                     </div>
                   ) : (
-                    <button className="btn ghost" onClick={() => setDisputingId(shift.id)}>
-                      Dispute this
+                    <button className="dispute-link" style={{ marginTop: "8px" }} onClick={() => setDisputingId(shift.id)}>
+                      Dispute this record
                     </button>
                   ))}
               </div>
