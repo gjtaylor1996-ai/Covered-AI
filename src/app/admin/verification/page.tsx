@@ -31,6 +31,11 @@ const FIELD_LABELS: Record<VerificationField, string> = {
   dbsStatus: "DBS check",
 };
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
 export default function AdminVerificationPage() {
   const [workers, setWorkers] = useState<QueueWorker[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +113,15 @@ export default function AdminVerificationPage() {
         ) : (
           workers.map((w) => (
             <div key={w.id} className="card">
-              <strong>{w.name}</strong>{" "}
-              <span className="text-muted" style={{ fontSize: "12.5px" }}>
-                {WORKER_ROLE_LABELS[w.primaryRole]}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div className="avatar">{initials(w.name)}</div>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: "14.5px" }}>{w.name}</div>
+                  <div className="text-muted" style={{ fontSize: "12px" }}>
+                    {WORKER_ROLE_LABELS[w.primaryRole]}
+                  </div>
+                </div>
+              </div>
 
               {w.idVerificationStatus === "pending" && (
                 <div style={{ marginTop: "10px" }}>

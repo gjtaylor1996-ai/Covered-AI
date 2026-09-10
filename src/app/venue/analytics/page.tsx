@@ -15,9 +15,28 @@ interface Forecast {
   basis: string;
 }
 
+interface TrustBreakdown {
+  trustScore: number | null;
+  trustTier: string;
+  feedbackCount: number;
+}
+
+interface FeedbackItem {
+  id: string;
+  paidOnTime: boolean;
+  breaksGiven: boolean;
+  matchedDescription: boolean;
+  comment: string | null;
+  submittedAt: string;
+}
+
+const DAY_LABEL = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export default function VenueAnalyticsPage() {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [forecast, setForecast] = useState<Forecast | null>(null);
+  const [trust, setTrust] = useState<TrustBreakdown | null>(null);
+  const [recentFeedback, setRecentFeedback] = useState<FeedbackItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +48,61 @@ export default function VenueAnalyticsPage() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then(setForecast)
       .catch(() => {});
+    fetch("/api/venues/me/trust-score")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((body) => {
+        setTrust(body.breakdown);
+        setRecentFeedback(body.recentFeedback);
+      })
+      .catch(() => {});
   }, []);
+
+  const insights: string[] = [];
+  if (analytics?.fillRate !== null && analytics?.fillRate !== undefined) {
+    const pct = Math.round(analytics.fillRate * 100);
+    insights.push(
+      pct >= 80
+        ? `${pct}% of your posted shifts get filled — a strong fill rate.`
+        : `${pct}% of your posted shifts get filled so far.`
+    );
+  }
+  const lastActiveWeek = analytics?.noShowTrend.filter((w) => w.shiftCount > 0).slice(-1)[0];
+  if (lastActiveWeek && lastActiveWeek.noShowRate !== null) {
+    insights.push(
+      `Your most recent active week (${lastActiveWeek.weekStart}) had a ${Math.round(lastActiveWeek.noShowRate * 100)}% no-show rate across ${lastActiveWeek.shiftCount} shift${lastActiveWeek.shiftCount === 1 ? "" : "s"}.`
+    );
+  }
+  if (analytics?.rateBenchmark.length) {
+    const biggestGap = [...analytics.rateBenchmark].sort(
+      (a, b) => Math.abs(b.venueAvgRate - b.platformAvgRate) - Math.abs(a.venueAvgRate - a.platformAvgRate)
+    )[0];
+    const diff = biggestGap ? biggestGap.venueAvgRate - biggestGap.platformAvgRate : 0;
+    if (biggestGap && Math.abs(diff) >= 0.5) {
+      insights.push(
+        `You pay ${WORKER_ROLE_LABELS[biggestGap.role]} £${Math.abs(diff).toFixed(2)}/hr ${diff > 0 ? "above" : "below"} the platform average.`
+      );
+    }
+  }
+  if (trust && trust.feedbackCount > 0) {
+    insights.push(
+      `Workers rate you ${trust.trustTier} (${trust.trustScore}), based on ${trust.feedbackCount} shift rating${trust.feedbackCount === 1 ? "" : "s"}.`
+    );
+  }
+
+  const maxPredicted = forecast
+    ? Math.max(1, ...forecast.forecast.map((f) => f.predictedShifts))
+    : 1;
+
+  const trustBreakdown =
+    recentFeedback && recentFeedback.length > 0
+      ? {
+          paidOnTime: Math.round((recentFeedback.filter((f) => f.paidOnTime).length / recentFeedback.length) * 100),
+          breaksGiven: Math.round((recentFeedback.filter((f) => f.breaksGiven).length / recentFeedback.length) * 100),
+          matchedDescription: Math.round(
+            (recentFeedback.filter((f) => f.matchedDescription).length / recentFeedback.length) * 100
+          ),
+        }
+      : null;
 
   return (
     <div className="page">
@@ -38,9 +111,108 @@ export default function VenueAnalyticsPage() {
         <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Analytics</h1>
         {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
+        {insights.length > 0 && (
+          <div className="insights-card">
+            <div className="section-title" style={{ marginTop: 0 }}>Insights for you</div>
+            {insights.map((text, i) => (
+              <div className="insight-row" key={i}>
+                <span className="insight-icon">💡</span>
+                <span>{text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {forecast && (
+          <>
+            <div className="section-title" style={{ marginTop: 0 }}>Demand forecast — next 7 days</div>
+            <p className="text-muted" style={{ fontSize: "12.5px", marginTop: 0, marginBottom: "10px" }}>{forecast.basis}</p>
+            <div className="forecast-strip">
+              {forecast.forecast.map((f) => {
+                const spike = f.predictedShifts >= maxPredicted * 0.8 && f.predictedShifts > 0;
+                const d = new Date(f.date + "T00:00:00Z");
+                return (
+                  <div key={f.date} className={`forecast-day ${spike ? "spike" : ""}`}>
+                    <div className="fd-day">{DAY_LABEL[d.getUTCDay()]}</div>
+                    <div className="fd-date">{d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</div>
+                    <div className="fd-bar-track">
+                      <div className="fd-bar-fill" style={{ height: `${Math.max(4, (f.predictedShifts / maxPredicted) * 100)}%` }} />
+                    </div>
+                    <div className="fd-count">{f.predictedShifts}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {trust && trust.feedbackCount > 0 && (
+          <>
+            <div className="section-title">Your worker trust score</div>
+            <p className="text-muted" style={{ fontSize: "12.5px", marginTop: 0 }}>
+              What candidates see about your venue before accepting a shift — workers answer three quick yes/no
+              questions after each shift; you never see who said what, only the aggregate.
+            </p>
+            <div className="card-dark score-hero">
+              <div className="score-stamp">
+                <div className="num">{trust.trustScore ?? "—"}</div>
+                <div className="tag">{trust.trustTier}</div>
+              </div>
+              <div className="score-copy">
+                <div className="lbl">Trust score, from worker feedback</div>
+                <p>Based on {trust.feedbackCount} rated shift{trust.feedbackCount === 1 ? "" : "s"}.</p>
+              </div>
+            </div>
+
+            {trustBreakdown && (
+              <div className="stat-grid">
+                <div className="stat-tile">
+                  <div className="stat-label">Paid on time</div>
+                  <div className="stat-value">{trustBreakdown.paidOnTime}%</div>
+                </div>
+                <div className="stat-tile">
+                  <div className="stat-label">Breaks given</div>
+                  <div className="stat-value">{trustBreakdown.breaksGiven}%</div>
+                </div>
+                <div className="stat-tile">
+                  <div className="stat-label">Matched description</div>
+                  <div className="stat-value">{trustBreakdown.matchedDescription}%</div>
+                </div>
+              </div>
+            )}
+
+            {recentFeedback && recentFeedback.some((f) => f.comment) && (
+              <>
+                <div className="section-title">Recent worker feedback</div>
+                <div className="card">
+                  {recentFeedback
+                    .filter((f) => f.comment)
+                    .map((f) => (
+                      <div className="comment-row" key={f.id}>
+                        <div className="comment-flags">
+                          <span className={`comment-flag ${f.paidOnTime ? "yes" : "no"}`}>
+                            {f.paidOnTime ? "Paid on time" : "Not paid on time"}
+                          </span>
+                          <span className={`comment-flag ${f.breaksGiven ? "yes" : "no"}`}>
+                            {f.breaksGiven ? "Breaks given" : "Breaks missed"}
+                          </span>
+                          <span className={`comment-flag ${f.matchedDescription ? "yes" : "no"}`}>
+                            {f.matchedDescription ? "As described" : "Didn't match"}
+                          </span>
+                        </div>
+                        <div className="comment-text">{f.comment}</div>
+                        <div className="comment-date">{new Date(f.submittedAt).toLocaleDateString("en-GB")}</div>
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
         {analytics && (
           <>
-            <div className="section-title" style={{ marginTop: 0 }}>Fill rate</div>
+            <div className="section-title">Fill rate</div>
             <div className="stat-tile" style={{ marginBottom: "10px" }}>
               <div className="stat-value" style={{ fontSize: "16px" }}>
                 {analytics.fillRate === null
@@ -96,31 +268,6 @@ export default function VenueAnalyticsPage() {
                 </table>
               </div>
             )}
-          </>
-        )}
-
-        {forecast && (
-          <>
-            <div className="section-title">Demand forecast — next 7 days</div>
-            <p className="text-muted" style={{ fontSize: "12.5px", marginTop: 0 }}>{forecast.basis}</p>
-            <div className="card" style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Predicted shifts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {forecast.forecast.map((f) => (
-                    <tr key={f.date}>
-                      <td>{f.date}</td>
-                      <td>{f.predictedShifts}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </>
         )}
       </div>

@@ -137,14 +137,18 @@ export default function AdminDashboardPage() {
 
         {found && (
           <div className="card">
-            <p style={{ fontSize: "13.5px" }}>
-              {found.email} ({found.role}) —{" "}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+              <div className="avatar">{found.email[0]?.toUpperCase()}</div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "14.5px" }}>{found.email}</div>
+                <div className="text-muted" style={{ fontSize: "12px", textTransform: "capitalize" }}>{found.role.replace(/_/g, " ")}</div>
+              </div>
               {found.suspendedAt ? (
-                <span className="badge rejected">suspended: {found.suspendedReason}</span>
+                <span className="badge rejected" style={{ marginLeft: "auto" }}>suspended: {found.suspendedReason}</span>
               ) : (
-                <span className="badge confirmed">active</span>
+                <span className="badge confirmed" style={{ marginLeft: "auto" }}>active</span>
               )}
-            </p>
+            </div>
             {!found.suspendedAt ? (
               <>
                 <div className="field">

@@ -91,17 +91,26 @@ export default function AdminDisputesPage() {
         ) : (
           disputes.map((d) => (
             <div key={d.id} className="card">
-              <p style={{ fontSize: "13.5px" }}>
-                Raised by <strong>{d.raisedBy}</strong> against{" "}
-                <strong>{d.targetType.replace("_", " ")}</strong>{" "}
-                {d.checkType && <span className="badge pending">{d.checkType}</span>}
-              </p>
-              <p style={{ fontSize: "13px" }}><strong>Reason:</strong> {d.reason}</p>
-              <p style={{ fontSize: "13px" }}><strong>Note:</strong> {d.note}</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
+                <div style={{ fontSize: "13.5px" }}>
+                  Raised by <strong>{d.raisedBy}</strong> against{" "}
+                  <strong>{d.targetType.replace(/_/g, " ")}</strong>
+                </div>
+                {d.checkType && <span className="badge pending">{d.checkType.replace(/_/g, " ")}</span>}
+              </div>
+              <div style={{ marginBottom: "10px" }}>
+                <label style={{ marginBottom: "2px" }}>Reason</label>
+                <p style={{ fontSize: "13px", margin: 0 }}>{d.reason}</p>
+              </div>
+              <div style={{ marginBottom: "10px" }}>
+                <label style={{ marginBottom: "2px" }}>Note</label>
+                <p style={{ fontSize: "13px", margin: 0 }}>{d.note}</p>
+              </div>
               {d.evidence && (
-                <p className="text-success" style={{ fontSize: "13px" }}>
-                  <strong>Evidence:</strong> {d.evidence}
-                </p>
+                <div style={{ marginBottom: "10px" }}>
+                  <label style={{ marginBottom: "2px" }}>Evidence</label>
+                  <p className="text-success" style={{ fontSize: "13px", margin: 0 }}>{d.evidence}</p>
+                </div>
               )}
               <div className="field">
                 <input
