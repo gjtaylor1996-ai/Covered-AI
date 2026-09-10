@@ -298,6 +298,43 @@ textarea:focus {
   outline-offset: 1px;
 }
 
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: var(--steel-light);
+  border-radius: 2px;
+  outline: none;
+  padding: 0;
+  border: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  margin-top: -1px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  accent-color: var(--amber-deep);
+}
+
 .field {
   margin-bottom: 12px;
 }

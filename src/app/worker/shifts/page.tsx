@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { WORKER_ROLE_LABELS, type WeeklyAvailability, type WorkerRoleKey } from "@/lib/types";
 import { VerificationPanel } from "../verification-panel";
 import { HireRequestsPanel } from "../hire-requests-panel";
+import { OnboardingWizard } from "../onboarding-wizard";
 import { formatTime12h } from "@/components/TimeInput";
 import { AppHeader } from "@/components/AppHeader";
+
+interface WorkerSummary {
+  primaryRole: WorkerRoleKey;
+  postcode: string;
+  yearsExperience: number;
+  hourlyRate: number;
+  maxTravelDistanceMi: number;
+  availability: WeeklyAvailability;
+  dbsStatus: string;
+  bankAccountConnected: boolean;
+  onboardingCompletedAt: string | null;
+}
 
 interface ShiftListItem {
   id: string;
@@ -27,6 +40,7 @@ interface ScoreBreakdown {
 }
 
 export default function WorkerShiftsPage() {
+  const [worker, setWorker] = useState<WorkerSummary | null>(null);
   const [shifts, setShifts] = useState<ShiftListItem[] | null>(null);
   const [score, setScore] = useState<ScoreBreakdown | null>(null);
   const [payoutsConnected, setPayoutsConnected] = useState<boolean | null>(null);
@@ -38,6 +52,14 @@ export default function WorkerShiftsPage() {
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeNote, setDisputeNote] = useState("");
   const [disputedFeedback, setDisputedFeedback] = useState<Set<string>>(new Set());
+
+  async function loadWorker() {
+    const res = await fetch("/api/workers/me");
+    if (res.ok) {
+      const body = await res.json();
+      setWorker(body.worker);
+    }
+  }
 
   async function loadShifts() {
     const res = await fetch("/api/shifts");
@@ -66,10 +88,15 @@ export default function WorkerShiftsPage() {
   }
 
   useEffect(() => {
+    loadWorker();
     loadShifts();
     loadScore();
     loadPayoutStatus();
   }, []);
+
+  async function handleOnboardingComplete() {
+    await Promise.all([loadWorker(), loadShifts(), loadScore(), loadPayoutStatus()]);
+  }
 
   async function connectPayouts() {
     setConnecting(true);
@@ -175,6 +202,14 @@ export default function WorkerShiftsPage() {
     cancelled: "rejected",
     no_show: "rejected",
   };
+
+  if (worker === null) {
+    return null;
+  }
+
+  if (!worker.onboardingCompletedAt) {
+    return <OnboardingWizard worker={worker} onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className="page">

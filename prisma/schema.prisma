@@ -228,6 +228,11 @@ model WorkerProfile {
   stripeConnectAccountId String?            @unique
   createdAt             DateTime            @default(now())
 
+  // Set once the worker finishes the post-signup onboarding wizard
+  // (basics, availability, verification, payout — all but basics
+  // skippable). Mirrors Venue.onboardingCompletedAt.
+  onboardingCompletedAt DateTime?
+
   // Not in spec §1 — Phase 4 (§8.1) needs somewhere to keep the
   // provider-specific state and submission timestamps behind the three
   // VerificationStatus fields above. idVerification goes through Persona
