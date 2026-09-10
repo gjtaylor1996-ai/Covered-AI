@@ -27,7 +27,14 @@ interface ShiftDetail {
   respondBy: string | null;
   worker: { id: string; name: string } | null;
   payment: PaymentInfo | null;
-  venueFeedback: { id: string } | null;
+  venueFeedback: {
+    id: string;
+    paidOnTime: boolean;
+    breaksGiven: boolean;
+    matchedDescription: boolean;
+    comment: string | null;
+    dispute: { status: string; checkType: string | null; evidence: string | null } | null;
+  } | null;
 }
 
 interface Candidate {
@@ -66,7 +73,6 @@ export default function VenueShiftDetailPage() {
   const [disputing, setDisputing] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
   const [disputeNote, setDisputeNote] = useState("");
-  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
   const [quickAction, setQuickAction] = useState<string | null>(null);
 
   async function loadShift() {
@@ -199,8 +205,10 @@ export default function VenueShiftDetailPage() {
       );
       return;
     }
-    setDisputeSubmitted(true);
     setDisputing(false);
+    setDisputeReason("");
+    setDisputeNote("");
+    await loadShift();
   }
 
   if (error && !shift) {
@@ -400,8 +408,39 @@ export default function VenueShiftDetailPage() {
           <section style={{ marginTop: "16px" }}>
             <div className="section-title" style={{ marginTop: 0 }}>Worker&apos;s rating of you</div>
             <div className="card">
-              {disputeSubmitted ? (
-                <p className="text-muted" style={{ fontSize: "13px" }}>Dispute submitted.</p>
+              <div className="comment-flags" style={{ marginBottom: shift.venueFeedback.comment ? "5px" : 0 }}>
+                <span className={`comment-flag ${shift.venueFeedback.paidOnTime ? "yes" : "no"}`}>
+                  {shift.venueFeedback.paidOnTime ? "Paid on time" : "Not paid on time"}
+                </span>
+                <span className={`comment-flag ${shift.venueFeedback.breaksGiven ? "yes" : "no"}`}>
+                  {shift.venueFeedback.breaksGiven ? "Breaks given" : "Breaks missed"}
+                </span>
+                <span className={`comment-flag ${shift.venueFeedback.matchedDescription ? "yes" : "no"}`}>
+                  {shift.venueFeedback.matchedDescription ? "As described" : "Didn't match"}
+                </span>
+              </div>
+              {shift.venueFeedback.comment && (
+                <p className="comment-text" style={{ marginBottom: "10px" }}>{shift.venueFeedback.comment}</p>
+              )}
+
+              {shift.venueFeedback.dispute ? (
+                shift.venueFeedback.dispute.status === "pending_review" ? (
+                  <div>
+                    <span className={`check-badge ${shift.venueFeedback.dispute.checkType ?? "subjective"}`}>
+                      {shift.venueFeedback.dispute.checkType === "objective" ? "Fast-track" : "Standard review"}
+                    </span>
+                    {shift.venueFeedback.dispute.evidence && (
+                      <div className="check-evidence">{shift.venueFeedback.dispute.evidence}</div>
+                    )}
+                    <div className="check-turnaround">
+                      A person still makes the final call on whether it counts against your trust score.
+                    </div>
+                  </div>
+                ) : shift.venueFeedback.dispute.status === "resolved_excluded" ? (
+                  <span className="resolved-tag excluded">Resolved — excluded from your trust score</span>
+                ) : (
+                  <span className="resolved-tag stands">Resolved — record stands, included in your trust score</span>
+                )
               ) : disputing ? (
                 <div>
                   <div className="field">
@@ -424,7 +463,7 @@ export default function VenueShiftDetailPage() {
                   </div>
                 </div>
               ) : (
-                <button className="btn ghost" onClick={() => setDisputing(true)}>Dispute this</button>
+                <button className="dispute-link" onClick={() => setDisputing(true)}>Dispute this record</button>
               )}
             </div>
           </section>

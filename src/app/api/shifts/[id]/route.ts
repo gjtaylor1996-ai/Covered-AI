@@ -37,9 +37,25 @@ export async function GET(
       venue: { select: { id: true, name: true } },
       worker: { select: { id: true, name: true } },
       payment: true,
-      venueFeedback: { select: { id: true } },
+      venueFeedback: {
+        select: { id: true, paidOnTime: true, breaksGiven: true, matchedDescription: true, comment: true },
+      },
     },
   });
 
-  return NextResponse.json({ shift: full });
+  // Dispute has no direct FK to VenueFeedback (polymorphic via
+  // targetType/targetId) — same pattern as GET /api/shifts.
+  const dispute = full?.venueFeedback
+    ? await db.dispute.findFirst({
+        where: { targetType: "venue_feedback", targetId: full.venueFeedback.id },
+        select: { status: true, checkType: true, evidence: true },
+      })
+    : null;
+
+  const shiftWithDispute = full && {
+    ...full,
+    venueFeedback: full.venueFeedback ? { ...full.venueFeedback, dispute } : null,
+  };
+
+  return NextResponse.json({ shift: shiftWithDispute });
 }

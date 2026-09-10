@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
 interface HireRequest {
   id: string;
   proposedRoleTitle: string;
@@ -53,8 +58,16 @@ export function HireRequestsPanel() {
       </div>
       {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
       {pending.map((r) => (
-        <div key={r.id} style={{ padding: "10px 0", borderBottom: "1px dashed rgba(242,238,225,0.15)", fontSize: "13px", lineHeight: 1.5 }}>
-          <strong>{r.venue.name}</strong> is offering <strong>{r.proposedRoleTitle}</strong> at
+        <div key={r.id} style={{ padding: "12px 0", borderBottom: "1px dashed rgba(242,238,225,0.15)", fontSize: "13px", lineHeight: 1.5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+            <div className="avatar on-dark">{initials(r.venue.name)}</div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: "13.5px", color: "var(--paper-light)" }}>{r.venue.name}</div>
+              <div style={{ fontSize: "11.5px", color: "var(--steel-light)" }}>
+                Offering <strong>{r.proposedRoleTitle}</strong>
+              </div>
+            </div>
+          </div>
           £{r.proposedSalary.toLocaleString()}/yr, starting{" "}
           {new Date(r.proposedStartDate).toLocaleDateString("en-GB")}.
           <br />

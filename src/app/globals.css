@@ -837,6 +837,11 @@ legend {
   flex-shrink: 0;
 }
 
+.avatar.on-dark {
+  background: var(--amber);
+  color: var(--ink);
+}
+
 /* ---------- insights ---------- */
 .insights-card {
   background: var(--card);

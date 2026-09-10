@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
 interface Favourite {
   id: string;
   name: string;
@@ -97,10 +102,16 @@ export function FavouritesPanel({ onBooked }: { onBooked?: () => void }) {
       {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
       {favourites.map((f) => (
-        <div key={f.id} style={{ borderBottom: "1px solid var(--line)", padding: "10px 0" }}>
-          <div style={{ fontSize: "13.5px" }}>
-            <strong>{f.name}</strong> — {WORKER_ROLE_LABELS[f.primaryRole]}, £{f.hourlyRate}/hr,{" "}
-            {f.reliabilityScore ?? "—"} ({f.reliabilityTier})
+        <div key={f.id} style={{ borderBottom: "1px solid var(--line)", padding: "12px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div className="avatar">{initials(f.name)}</div>
+            <div style={{ fontSize: "13.5px" }}>
+              <strong>{f.name}</strong>
+              <div className="text-muted" style={{ fontSize: "12px" }}>
+                {WORKER_ROLE_LABELS[f.primaryRole]} · £{f.hourlyRate}/hr ·{" "}
+                {f.reliabilityScore ?? "—"} ({f.reliabilityTier})
+              </div>
+            </div>
           </div>
           <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
             <button className="btn primary" disabled={busyId === f.id} onClick={() => rebook(f.id)}>
