@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { FavouritesPanel } from "../favourites-panel";
+import { OnboardingWizard } from "../onboarding-wizard";
 import { TimeInput, formatTime12h } from "@/components/TimeInput";
 import { AppHeader } from "@/components/AppHeader";
+
+interface VenueSummary {
+  name: string;
+  postcode: string;
+  paymentConnected: boolean;
+  onboardingCompletedAt: string | null;
+}
 
 interface ShiftListItem {
   id: string;
@@ -25,6 +33,7 @@ interface TrustBreakdown {
 }
 
 export default function VenueShiftsPage() {
+  const [venue, setVenue] = useState<VenueSummary | null>(null);
   const [shifts, setShifts] = useState<ShiftListItem[] | null>(null);
   const [trust, setTrust] = useState<TrustBreakdown | null>(null);
   const [paymentMethodConnected, setPaymentMethodConnected] = useState<boolean | null>(null);
@@ -37,6 +46,14 @@ export default function VenueShiftsPage() {
   const [endTime, setEndTime] = useState("23:00");
   const [hourlyRate, setHourlyRate] = useState("14");
   const [submitting, setSubmitting] = useState(false);
+
+  async function loadVenue() {
+    const res = await fetch("/api/venues/me");
+    if (res.ok) {
+      const body = await res.json();
+      setVenue(body.venue);
+    }
+  }
 
   async function loadShifts() {
     const res = await fetch("/api/shifts");
@@ -67,10 +84,15 @@ export default function VenueShiftsPage() {
   }
 
   useEffect(() => {
+    loadVenue();
     loadShifts();
     loadTrust();
     loadPaymentStatus();
   }, []);
+
+  async function handleOnboardingComplete() {
+    await Promise.all([loadVenue(), loadShifts(), loadTrust(), loadPaymentStatus()]);
+  }
 
   async function connectPaymentMethod() {
     setConnecting(true);
@@ -107,6 +129,14 @@ export default function VenueShiftsPage() {
     }
     setDate("");
     await loadShifts();
+  }
+
+  if (venue === null) {
+    return null;
+  }
+
+  if (!venue.onboardingCompletedAt) {
+    return <OnboardingWizard venue={venue} onComplete={handleOnboardingComplete} />;
   }
 
   return (

@@ -323,6 +323,12 @@ model Venue {
   // figures like this stay configurable, not hardcoded.
   commissionRateOverride Float?
 
+  // Set once the venue finishes the post-signup onboarding wizard
+  // (details, payment method, first shift — all skippable). Null means
+  // "show the wizard on next visit," not "never set up" — a venue can
+  // finish it with every step skipped.
+  onboardingCompletedAt DateTime?
+
   members        VenueMember[]
   shifts         Shift[]
   favourites     Favourite[]
