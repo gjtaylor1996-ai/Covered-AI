@@ -88,23 +88,26 @@ export function FavouritesPanel({ onBooked }: { onBooked?: () => void }) {
   if (!favourites || favourites.length === 0) return null;
 
   return (
-    <section style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>
-      <h2 style={{ marginTop: 0 }}>Book again</h2>
-      <p style={{ color: "#555", margin: "0 0 0.75rem" }}>
+    <section className="card">
+      <div className="section-title" style={{ marginTop: 0 }}>Book again</div>
+      <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 12px" }}>
         One tap to re-request someone you&apos;ve starred as a favourite.
       </p>
-      {notice && <p style={{ color: "#276" }}>{notice}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {notice && <p className="mono text-success" style={{ fontSize: "12.5px" }}>{notice}</p>}
+      {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {favourites.map((f) => (
-          <li key={f.id} style={{ borderBottom: "1px solid #eee", padding: "0.5rem 0" }}>
+      {favourites.map((f) => (
+        <div key={f.id} style={{ borderBottom: "1px solid var(--line)", padding: "10px 0" }}>
+          <div style={{ fontSize: "13.5px" }}>
             <strong>{f.name}</strong> — {WORKER_ROLE_LABELS[f.primaryRole]}, £{f.hourlyRate}/hr,{" "}
-            {f.reliabilityScore ?? "—"} ({f.reliabilityTier}){" "}
-            <button disabled={busyId === f.id} onClick={() => rebook(f.id)}>
+            {f.reliabilityScore ?? "—"} ({f.reliabilityTier})
+          </div>
+          <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+            <button className="btn primary" disabled={busyId === f.id} onClick={() => rebook(f.id)}>
               Rebook for tomorrow
-            </button>{" "}
+            </button>
             <button
+              className="btn ghost"
               disabled={busyId === f.id}
               onClick={() => {
                 setHiringId(f.id);
@@ -113,52 +116,54 @@ export function FavouritesPanel({ onBooked }: { onBooked?: () => void }) {
             >
               Hire permanently
             </button>
-            {hiringId === f.id && (
-              <form onSubmit={proposeHire} style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
-                <label>
-                  Job title
-                  <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} required style={{ display: "block", width: "100%" }} />
-                </label>
-                <label>
-                  Proposed annual salary (£)
-                  <input type="number" min="0" value={salary} onChange={(e) => setSalary(e.target.value)} required style={{ display: "block", width: "100%" }} />
-                </label>
-                <label>
-                  Proposed start date
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required style={{ display: "block", width: "100%" }} />
-                </label>
-                {/* UK Conduct of Employment Agencies and Employment Businesses
-                    Regulations 2003 reg. 10: the fee is only enforceable if the
-                    extended-hire alternative is offered alongside it — both
-                    options are always shown together here, never just the fee. */}
-                <fieldset style={{ border: "1px solid #eee", padding: "0.5rem" }}>
-                  <legend>Fee option</legend>
-                  <label style={{ display: "block" }}>
+          </div>
+          {hiringId === f.id && (
+            <form onSubmit={proposeHire} style={{ marginTop: "12px" }}>
+              <div className="field">
+                <label>Job title</label>
+                <input value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} required />
+              </div>
+              <div className="field">
+                <label>Proposed annual salary (£)</label>
+                <input type="number" min="0" value={salary} onChange={(e) => setSalary(e.target.value)} required />
+              </div>
+              <div className="field">
+                <label>Proposed start date</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+              </div>
+              {/* UK Conduct of Employment Agencies and Employment Businesses
+                  Regulations 2003 reg. 10: the fee is only enforceable if the
+                  extended-hire alternative is offered alongside it — both
+                  options are always shown together here, never just the fee. */}
+              <fieldset style={{ marginBottom: "12px" }}>
+                <legend>Fee option</legend>
+                <div className="radio-row" style={{ flexDirection: "column", alignItems: "flex-start", gap: "8px", padding: "6px 0" }}>
+                  <label>
                     <input
                       type="radio"
                       checked={feeOption === "conversion_fee"}
                       onChange={() => setFeeOption("conversion_fee")}
-                    />{" "}
+                    />
                     Pay a one-off conversion fee (tiered by shifts completed)
                   </label>
-                  <label style={{ display: "block" }}>
+                  <label>
                     <input
                       type="radio"
                       checked={feeOption === "extended_hire"}
                       onChange={() => setFeeOption("extended_hire")}
-                    />{" "}
+                    />
                     Extended hire period instead — no fee
                   </label>
-                </fieldset>
-                <div>
-                  <button type="submit" disabled={busyId === f.id}>Send hire request</button>{" "}
-                  <button type="button" onClick={() => setHiringId(null)}>Cancel</button>
                 </div>
-              </form>
-            )}
-          </li>
-        ))}
-      </ul>
+              </fieldset>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button type="submit" className="btn primary" disabled={busyId === f.id}>Send hire request</button>
+                <button type="button" className="btn ghost" onClick={() => setHiringId(null)}>Cancel</button>
+              </div>
+            </form>
+          )}
+        </div>
+      ))}
     </section>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { AppHeader } from "@/components/AppHeader";
 
 interface Analytics {
   fillRate: number | null;
@@ -32,96 +32,98 @@ export default function VenueAnalyticsPage() {
   }, []);
 
   return (
-    <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/venue/shifts">&larr; Your shifts</Link>
-      </p>
-      <h1>Analytics</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+    <div className="page">
+      <AppHeader links={[{ href: "/venue/shifts", label: "Your shifts" }]} />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Analytics</h1>
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      {analytics && (
-        <>
-          <section style={{ marginBottom: "1.5rem" }}>
-            <h2>Fill rate</h2>
-            <p>
-              {analytics.fillRate === null
-                ? "No shifts posted yet."
-                : `${Math.round(analytics.fillRate * 100)}% of posted shifts got filled.`}
-            </p>
-          </section>
+        {analytics && (
+          <>
+            <div className="section-title" style={{ marginTop: 0 }}>Fill rate</div>
+            <div className="stat-tile" style={{ marginBottom: "10px" }}>
+              <div className="stat-value" style={{ fontSize: "16px" }}>
+                {analytics.fillRate === null
+                  ? "No shifts posted yet."
+                  : `${Math.round(analytics.fillRate * 100)}% of posted shifts got filled.`}
+              </div>
+            </div>
 
-          <section style={{ marginBottom: "1.5rem" }}>
-            <h2>No-show trend (last 8 weeks)</h2>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left" }}>
-                  <th>Week of</th>
-                  <th>No-show rate</th>
-                  <th>Shifts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.noShowTrend.map((w) => (
-                  <tr key={w.weekStart}>
-                    <td>{w.weekStart}</td>
-                    <td>{w.noShowRate === null ? "—" : `${Math.round(w.noShowRate * 100)}%`}</td>
-                    <td>{w.shiftCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-
-          <section style={{ marginBottom: "1.5rem" }}>
-            <h2>Rate benchmark</h2>
-            {analytics.rateBenchmark.length === 0 ? (
-              <p>Post a shift to see how your rates compare.</p>
-            ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div className="section-title">No-show trend (last 8 weeks)</div>
+            <div className="card" style={{ overflowX: "auto" }}>
+              <table>
                 <thead>
-                  <tr style={{ textAlign: "left" }}>
-                    <th>Role</th>
-                    <th>Your avg rate</th>
-                    <th>Platform avg rate</th>
+                  <tr>
+                    <th>Week of</th>
+                    <th>No-show rate</th>
+                    <th>Shifts</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {analytics.rateBenchmark.map((r) => (
-                    <tr key={r.role}>
-                      <td>{WORKER_ROLE_LABELS[r.role]}</td>
-                      <td>£{r.venueAvgRate}/hr</td>
-                      <td>£{r.platformAvgRate}/hr</td>
+                  {analytics.noShowTrend.map((w) => (
+                    <tr key={w.weekStart}>
+                      <td>{w.weekStart}</td>
+                      <td>{w.noShowRate === null ? "—" : `${Math.round(w.noShowRate * 100)}%`}</td>
+                      <td>{w.shiftCount}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-          </section>
-        </>
-      )}
+            </div>
 
-      {forecast && (
-        <section>
-          <h2>Demand forecast — next 7 days</h2>
-          <p style={{ color: "#555" }}>{forecast.basis}</p>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ textAlign: "left" }}>
-                <th>Date</th>
-                <th>Predicted shifts</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forecast.forecast.map((f) => (
-                <tr key={f.date}>
-                  <td>{f.date}</td>
-                  <td>{f.predictedShifts}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-    </main>
+            <div className="section-title">Rate benchmark</div>
+            {analytics.rateBenchmark.length === 0 ? (
+              <p className="text-muted">Post a shift to see how your rates compare.</p>
+            ) : (
+              <div className="card" style={{ overflowX: "auto" }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Role</th>
+                      <th>Your avg rate</th>
+                      <th>Platform avg rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analytics.rateBenchmark.map((r) => (
+                      <tr key={r.role}>
+                        <td>{WORKER_ROLE_LABELS[r.role]}</td>
+                        <td>£{r.venueAvgRate}/hr</td>
+                        <td>£{r.platformAvgRate}/hr</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {forecast && (
+          <>
+            <div className="section-title">Demand forecast — next 7 days</div>
+            <p className="text-muted" style={{ fontSize: "12.5px", marginTop: 0 }}>{forecast.basis}</p>
+            <div className="card" style={{ overflowX: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Predicted shifts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {forecast.forecast.map((f) => (
+                    <tr key={f.date}>
+                      <td>{f.date}</td>
+                      <td>{f.predictedShifts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

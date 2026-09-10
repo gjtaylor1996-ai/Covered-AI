@@ -7,6 +7,7 @@ export function LogoutButton() {
   return (
     <button
       type="button"
+      className="btn ghost"
       onClick={async () => {
         await fetch("/api/auth/logout", { method: "POST" });
         router.refresh();

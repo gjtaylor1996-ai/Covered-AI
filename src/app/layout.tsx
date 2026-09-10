@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { ServiceWorkerRegistration } from "./service-worker-registration";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Covered",
@@ -24,7 +25,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: 0 }}>
+      <body>
         {children}
         <ServiceWorkerRegistration />
       </body>

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { formatTime12h } from "@/components/TimeInput";
+import { AppHeader } from "@/components/AppHeader";
 
 interface PaymentInfo {
   status: string;
@@ -205,83 +205,75 @@ export default function VenueShiftDetailPage() {
 
   if (error && !shift) {
     return (
-      <main style={{ maxWidth: 560, margin: "3rem auto" }}>
-        <p style={{ color: "crimson" }}>{error}</p>
-      </main>
+      <div className="page">
+        <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+        <div className="content">
+          <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>
+        </div>
+      </div>
     );
   }
   if (!shift) {
     return (
-      <main style={{ maxWidth: 560, margin: "3rem auto" }}>
-        <p>Loading…</p>
-      </main>
+      <div className="page">
+        <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+        <div className="content">
+          <p className="text-muted">Loading…</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main style={{ maxWidth: 560, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/venue/shifts">&larr; All shifts</Link>
-      </p>
-      <h1>{WORKER_ROLE_LABELS[shift.role]}</h1>
-      <p>
-        {new Date(shift.date).toLocaleDateString("en-GB")}, {formatTime12h(shift.startTime)}–
-        {formatTime12h(shift.endTime)} · £{shift.hourlyRate}/hr
-      </p>
-      <p>
-        Status: <strong>{shift.status}</strong>
-      </p>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+    <div className="page">
+      <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "6px" }}>{WORKER_ROLE_LABELS[shift.role]}</h1>
+        <p className="text-muted" style={{ fontSize: "13px", margin: "0 0 10px" }}>
+          {new Date(shift.date).toLocaleDateString("en-GB")}, {formatTime12h(shift.startTime)}–
+          {formatTime12h(shift.endTime)} · £{shift.hourlyRate}/hr
+        </p>
+        <span className={`badge ${shift.status === "confirmed" || shift.status === "completed" ? "confirmed" : shift.status === "offered" ? "pending" : "rejected"}`}>
+          {shift.status.replace(/_/g, " ")}
+        </span>
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      {shift.status === "open" && (
-        <section>
-          <h2>Offer to a candidate</h2>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
-            {QUICK_ACTIONS.map((a) => (
-              <button
-                key={a.key}
-                onClick={() => setQuickAction(quickAction === a.key ? null : a.key)}
-                style={{
-                  border: quickAction === a.key ? "2px solid #333" : "1px solid #ccc",
-                  borderRadius: 20,
-                  padding: "0.4rem 0.8rem",
-                }}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-          {candidates === null ? (
-            <p>Loading candidates…</p>
-          ) : candidates.length === 0 ? (
-            <p>No candidates found.</p>
-          ) : (
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              {candidates.map((c) => (
-                <li
-                  key={c.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #eee",
-                    padding: "0.5rem 0",
-                  }}
+        {shift.status === "open" && (
+          <section style={{ marginTop: "20px" }}>
+            <div className="section-title" style={{ marginTop: 0 }}>Offer to a candidate</div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+              {QUICK_ACTIONS.map((a) => (
+                <button
+                  key={a.key}
+                  className={`chip ${quickAction === a.key ? "active" : ""}`}
+                  onClick={() => setQuickAction(quickAction === a.key ? null : a.key)}
                 >
-                  <span>
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            {candidates === null ? (
+              <p className="text-muted">Loading candidates…</p>
+            ) : candidates.length === 0 ? (
+              <p className="text-muted">No candidates found.</p>
+            ) : (
+              candidates.map((c) => (
+                <div key={c.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
+                  <div style={{ fontSize: "13px", lineHeight: 1.5 }}>
                     <button
                       onClick={() => toggleFavourite(c.id)}
                       title="Favourite"
-                      style={{ border: "none", background: "none", cursor: "pointer" }}
+                      style={{ border: "none", background: "none", cursor: "pointer", color: "var(--amber-deep)", padding: 0, marginRight: "6px" }}
                     >
                       {c.isFavourite ? "★" : "☆"}
-                    </button>{" "}
-                    {c.name} — match {c.matchScore}, {c.yearsExperience}y exp,{" "}
+                    </button>
+                    <strong>{c.name}</strong> — match {c.matchScore}, {c.yearsExperience}y exp,{" "}
                     {c.reliabilityScore !== null
                       ? `${c.reliabilityScore} (${c.reliabilityTier})`
                       : c.reliabilityTier}
                     , {c.shiftsCompleted} shifts completed
                     {c.isNewWorker && (
-                      <span style={{ color: "#a55", marginLeft: "0.4rem" }}>
+                      <span className="text-error" style={{ marginLeft: "6px", fontSize: "12px" }}>
                         · New — capped shift value
                       </span>
                     )}
@@ -293,139 +285,151 @@ export default function VenueShiftDetailPage() {
                         </a>
                       </>
                     )}
-                  </span>
-                  <button disabled={busy} onClick={() => handleOffer(c.id)}>
+                  </div>
+                  <button className="btn primary" disabled={busy} onClick={() => handleOffer(c.id)}>
                     Offer
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
-      {shift.status === "offered" && (
-        <p>
-          Offered to <strong>{shift.worker?.name}</strong>, awaiting response
-          {shift.respondBy &&
-            ` by ${new Date(shift.respondBy).toLocaleTimeString("en-GB")}`}
-          .
-        </p>
-      )}
-
-      {shift.status === "confirmed" && (
-        <section>
-          <p>
-            Confirmed with <strong>{shift.worker?.name}</strong>.{" "}
-            <button disabled={busy} onClick={handleCancel}>
-              Cancel shift
-            </button>
-          </p>
-          <h2>Mark complete</h2>
-          <form onSubmit={handleComplete} style={{ display: "grid", gap: "0.5rem" }}>
-            <label>
-              <input
-                type="checkbox"
-                checked={confirmedAttendance}
-                onChange={(e) => setConfirmedAttendance(e.target.checked)}
-              />{" "}
-              Showed up and completed the shift
-            </label>
-            {confirmedAttendance && (
-              <>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={onTime}
-                    onChange={(e) => setOnTime(e.target.checked)}
-                  />{" "}
-                  On time
-                </label>
-                {!onTime && (
-                  <label>
-                    Minutes late
-                    <input
-                      type="number"
-                      min="0"
-                      value={minutesLate}
-                      onChange={(e) => setMinutesLate(e.target.value)}
-                      style={{ display: "block", width: 120 }}
-                    />
-                  </label>
-                )}
-              </>
+                </div>
+              ))
             )}
-            <button type="submit" disabled={busy}>
-              Submit
-            </button>
-          </form>
-        </section>
-      )}
+          </section>
+        )}
 
-      {["completed", "no_show", "cancelled_by_worker", "cancelled_by_venue"].includes(
-        shift.status
-      ) && <p>This shift is closed ({shift.status}).</p>}
+        {shift.status === "offered" && (
+          <p style={{ marginTop: "16px", fontSize: "13.5px" }}>
+            Offered to <strong>{shift.worker?.name}</strong>, awaiting response
+            {shift.respondBy &&
+              ` by ${new Date(shift.respondBy).toLocaleTimeString("en-GB")}`}
+            .
+          </p>
+        )}
 
-      {shift.status === "completed" && shift.payment && (
-        <section>
-          <h2>Payment</h2>
-          <p>
-            Worker payout: <strong>{shift.payment.status}</strong> — £
-            {(shift.payment.totalAmountCents / 100).toFixed(2)} total (£
-            {(shift.payment.workerAmountCents / 100).toFixed(2)} to worker, £
-            {(shift.payment.commissionAmountCents / 100).toFixed(2)} commission)
-          </p>
-          {shift.payment.failureReason && (
-            <p style={{ color: "#a55" }}>{shift.payment.failureReason}</p>
-          )}
-          <p>
-            Your card charge:{" "}
-            <strong>{shift.payment.venueChargeFailed ? "failed" : "succeeded"}</strong>
-          </p>
-          {shift.payment.venueChargeFailed && (
-            <p style={{ color: "#a55" }}>
-              {shift.payment.venueChargeFailureReason}
-              {shift.payment.status === "paid_out" &&
-                " The worker has already been paid for this shift regardless — this only affects your card."}
+        {shift.status === "confirmed" && (
+          <section style={{ marginTop: "16px" }}>
+            <p style={{ fontSize: "13.5px" }}>
+              Confirmed with <strong>{shift.worker?.name}</strong>.{" "}
+              <button className="btn ghost" disabled={busy} onClick={handleCancel}>
+                Cancel shift
+              </button>
             </p>
-          )}
-          {(shift.payment.status === "pending_setup" ||
-            shift.payment.status === "failed" ||
-            shift.payment.venueChargeFailed) && (
-            <button disabled={busy} onClick={handleRetryCharge}>
-              Retry payment
-            </button>
-          )}
-        </section>
-      )}
+            <div className="section-title">Mark complete</div>
+            <form onSubmit={handleComplete} className="card">
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13.5px", textTransform: "none", letterSpacing: "normal", color: "var(--ink)" }}>
+                <input
+                  type="checkbox"
+                  style={{ width: "auto" }}
+                  checked={confirmedAttendance}
+                  onChange={(e) => setConfirmedAttendance(e.target.checked)}
+                />
+                Showed up and completed the shift
+              </label>
+              {confirmedAttendance && (
+                <>
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "10px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13.5px", textTransform: "none", letterSpacing: "normal", color: "var(--ink)" }}>
+                    <input
+                      type="checkbox"
+                      style={{ width: "auto" }}
+                      checked={onTime}
+                      onChange={(e) => setOnTime(e.target.checked)}
+                    />
+                    On time
+                  </label>
+                  {!onTime && (
+                    <div className="field" style={{ maxWidth: "160px", marginTop: "10px" }}>
+                      <label>Minutes late</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={minutesLate}
+                        onChange={(e) => setMinutesLate(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+              <button type="submit" className="btn primary" disabled={busy} style={{ marginTop: "12px" }}>
+                Submit
+              </button>
+            </form>
+          </section>
+        )}
 
-      {shift.status === "completed" && shift.venueFeedback && (
-        <section>
-          <h2>Worker&apos;s rating of you</h2>
-          {disputeSubmitted ? (
-            <p>Dispute submitted.</p>
-          ) : disputing ? (
-            <div style={{ display: "grid", gap: "0.5rem" }}>
-              <input
-                placeholder="Reason (e.g. this doesn't match what happened)"
-                value={disputeReason}
-                onChange={(e) => setDisputeReason(e.target.value)}
-              />
-              <textarea
-                placeholder="Note — give the details a reviewer would need"
-                value={disputeNote}
-                onChange={(e) => setDisputeNote(e.target.value)}
-              />
-              <div>
-                <button disabled={busy} onClick={submitDispute}>Submit dispute</button>{" "}
-                <button onClick={() => setDisputing(false)}>Cancel</button>
-              </div>
+        {["completed", "no_show", "cancelled_by_worker", "cancelled_by_venue"].includes(
+          shift.status
+        ) && <p className="text-muted" style={{ marginTop: "16px" }}>This shift is closed ({shift.status.replace(/_/g, " ")}).</p>}
+
+        {shift.status === "completed" && shift.payment && (
+          <section style={{ marginTop: "16px" }}>
+            <div className="section-title" style={{ marginTop: 0 }}>Payment</div>
+            <div className="card">
+              <p style={{ fontSize: "13.5px" }}>
+                Worker payout: <span className="badge confirmed">{shift.payment.status.replace(/_/g, " ")}</span>
+                <br />
+                £{(shift.payment.totalAmountCents / 100).toFixed(2)} total (£
+                {(shift.payment.workerAmountCents / 100).toFixed(2)} to worker, £
+                {(shift.payment.commissionAmountCents / 100).toFixed(2)} commission)
+              </p>
+              {shift.payment.failureReason && (
+                <p className="text-error" style={{ fontSize: "12.5px" }}>{shift.payment.failureReason}</p>
+              )}
+              <p style={{ fontSize: "13.5px" }}>
+                Your card charge:{" "}
+                <span className={`badge ${shift.payment.venueChargeFailed ? "rejected" : "confirmed"}`}>
+                  {shift.payment.venueChargeFailed ? "failed" : "succeeded"}
+                </span>
+              </p>
+              {shift.payment.venueChargeFailed && (
+                <p className="text-error" style={{ fontSize: "12.5px" }}>
+                  {shift.payment.venueChargeFailureReason}
+                  {shift.payment.status === "paid_out" &&
+                    " The worker has already been paid for this shift regardless — this only affects your card."}
+                </p>
+              )}
+              {(shift.payment.status === "pending_setup" ||
+                shift.payment.status === "failed" ||
+                shift.payment.venueChargeFailed) && (
+                <button className="btn primary" disabled={busy} onClick={handleRetryCharge}>
+                  Retry payment
+                </button>
+              )}
             </div>
-          ) : (
-            <button onClick={() => setDisputing(true)}>Dispute this</button>
-          )}
-        </section>
-      )}
-    </main>
+          </section>
+        )}
+
+        {shift.status === "completed" && shift.venueFeedback && (
+          <section style={{ marginTop: "16px" }}>
+            <div className="section-title" style={{ marginTop: 0 }}>Worker&apos;s rating of you</div>
+            <div className="card">
+              {disputeSubmitted ? (
+                <p className="text-muted" style={{ fontSize: "13px" }}>Dispute submitted.</p>
+              ) : disputing ? (
+                <div>
+                  <div className="field">
+                    <input
+                      placeholder="Reason (e.g. this doesn't match what happened)"
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                    />
+                  </div>
+                  <div className="field">
+                    <textarea
+                      placeholder="Note — give the details a reviewer would need"
+                      value={disputeNote}
+                      onChange={(e) => setDisputeNote(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button className="btn primary" disabled={busy} onClick={submitDispute}>Submit dispute</button>
+                    <button className="btn ghost" onClick={() => setDisputing(false)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <button className="btn ghost" onClick={() => setDisputing(true)}>Dispute this</button>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
   );
 }

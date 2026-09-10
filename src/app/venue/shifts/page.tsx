@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { FavouritesPanel } from "../favourites-panel";
 import { TimeInput, formatTime12h } from "@/components/TimeInput";
+import { AppHeader } from "@/components/AppHeader";
 
 interface ShiftListItem {
   id: string;
@@ -109,138 +110,134 @@ export default function VenueShiftsPage() {
   }
 
   return (
-    <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/">&larr; Home</Link> · <Link href="/venue/analytics">Analytics</Link>
-      </p>
-      <h1>Your shifts</h1>
+    <div className="page">
+      <AppHeader links={[{ href: "/", label: "Home" }, { href: "/venue/analytics", label: "Analytics" }]} />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Your shifts</h1>
 
-      <FavouritesPanel onBooked={loadShifts} />
+        <FavouritesPanel onBooked={loadShifts} />
 
-      {trust && (
-        <div style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>
-          <strong>
-            Trust score: {trust.trustScore ?? "—"} ({trust.trustTier})
-          </strong>
-          <p style={{ margin: "0.25rem 0 0", color: "#555" }}>
-            Based on {trust.feedbackCount} worker rating{trust.feedbackCount === 1 ? "" : "s"}.
-          </p>
-        </div>
-      )}
+        {trust && (
+          <div className="card-dark score-hero">
+            <div className="score-stamp">
+              <div className="num">{trust.trustScore ?? "—"}</div>
+              <div className="tag">{trust.trustTier}</div>
+            </div>
+            <div className="score-copy">
+              <div className="lbl">Venue trust score</div>
+              <p>
+                Based on {trust.feedbackCount} worker rating{trust.feedbackCount === 1 ? "" : "s"}.
+              </p>
+            </div>
+          </div>
+        )}
 
-      {paymentMethodConnected === false && (
-        <p>
-          <button disabled={connecting} onClick={connectPaymentMethod}>
-            {connecting ? "Redirecting…" : "Add payment method"}
-          </button>{" "}
-          — shifts won&apos;t be charged until a card is on file.
-        </p>
-      )}
+        {paymentMethodConnected === false && (
+          <div className="why-box">
+            <button className="btn primary" disabled={connecting} onClick={connectPaymentMethod} style={{ marginRight: "10px" }}>
+              {connecting ? "Redirecting…" : "Add payment method"}
+            </button>
+            shifts won&apos;t be charged until a card is on file.
+          </div>
+        )}
 
-      <form
-        onSubmit={handleCreate}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "0.75rem",
-          border: "1px solid #ddd",
-          padding: "1rem",
-          marginBottom: "2rem",
-        }}
-      >
-        <label>
-          Role
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as WorkerRoleKey)}
-            style={{ display: "block", width: "100%" }}
-          >
-            {Object.entries(WORKER_ROLE_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Date
-          <input
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        <label>
-          Start time
-          <div style={{ marginTop: "0.25rem" }}>
+        <div className="section-title">Post a shift</div>
+        <form
+          onSubmit={handleCreate}
+          className="card"
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 14px" }}
+        >
+          <div className="field">
+            <label>Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as WorkerRoleKey)}
+            >
+              {Object.entries(WORKER_ROLE_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Date</label>
+            <input
+              type="date"
+              required
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Start time</label>
             <TimeInput value={startTime} onChange={setStartTime} />
           </div>
-        </label>
-        <label>
-          End time
-          <div style={{ marginTop: "0.25rem" }}>
+          <div className="field">
+            <label>End time</label>
             <TimeInput value={endTime} onChange={setEndTime} />
           </div>
-        </label>
-        <label>
-          Hourly rate (£)
-          <input
-            type="number"
-            min="0"
-            step="0.5"
-            required
-            value={hourlyRate}
-            onChange={(e) => setHourlyRate(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        <div style={{ alignSelf: "end" }}>
-          <button type="submit" disabled={submitting}>
-            {submitting ? "Posting…" : "Post shift"}
-          </button>
-        </div>
-      </form>
+          <div className="field">
+            <label>Hourly rate (£)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              required
+              value={hourlyRate}
+              onChange={(e) => setHourlyRate(e.target.value)}
+            />
+          </div>
+          <div style={{ alignSelf: "end", marginBottom: "12px" }}>
+            <button type="submit" className="btn primary" disabled={submitting}>
+              {submitting ? "Posting…" : "Post shift"}
+            </button>
+          </div>
+        </form>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      {shifts === null ? (
-        <p>Loading…</p>
-      ) : shifts.length === 0 ? (
-        <p>No shifts posted yet.</p>
-      ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ccc" }}>
-              <th>Role</th>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Rate</th>
-              <th>Status</th>
-              <th>Worker</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shifts.map((shift) => (
-              <tr key={shift.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>
-                  <Link href={`/venue/shifts/${shift.id}`}>
-                    {WORKER_ROLE_LABELS[shift.role]}
-                  </Link>
-                </td>
-                <td>{new Date(shift.date).toLocaleDateString("en-GB")}</td>
-                <td>
-                  {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}
-                </td>
-                <td>£{shift.hourlyRate}/hr</td>
-                <td>{shift.status}</td>
-                <td>{shift.worker?.name ?? "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+        <div className="section-title">All shifts</div>
+
+        {shifts === null ? (
+          <p className="text-muted">Loading…</p>
+        ) : shifts.length === 0 ? (
+          <p className="text-muted">No shifts posted yet.</p>
+        ) : (
+          <div className="card" style={{ overflowX: "auto" }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Rate</th>
+                  <th>Status</th>
+                  <th>Worker</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shifts.map((shift) => (
+                  <tr key={shift.id}>
+                    <td>
+                      <Link href={`/venue/shifts/${shift.id}`}>
+                        {WORKER_ROLE_LABELS[shift.role]}
+                      </Link>
+                    </td>
+                    <td>{new Date(shift.date).toLocaleDateString("en-GB")}</td>
+                    <td>
+                      {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}
+                    </td>
+                    <td>£{shift.hourlyRate}/hr</td>
+                    <td>{shift.status}</td>
+                    <td>{shift.worker?.name ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

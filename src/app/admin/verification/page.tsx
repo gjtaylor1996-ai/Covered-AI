@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { AppHeader } from "@/components/AppHeader";
 
 type VerificationField = "rightToWorkStatus" | "idVerificationStatus" | "dbsStatus";
 
@@ -74,44 +74,53 @@ export default function AdminVerificationPage() {
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/">&larr; Home</Link> · <Link href="/admin/disputes">Disputes</Link> ·{" "}
-        <Link href="/admin/dashboard">Dashboard</Link>
-      </p>
-      <h1>Verification queue</h1>
-      <p style={{ color: "#555" }}>
-        ID verification resolves automatically via Persona except when it comes back
-        anything other than &quot;approved&quot; — right to work and DBS always land here,
-        since neither has a self-serve API to check automatically.
-      </p>
+    <div className="page">
+      <AppHeader
+        links={[
+          { href: "/", label: "Home" },
+          { href: "/admin/disputes", label: "Disputes" },
+          { href: "/admin/dashboard", label: "Dashboard" },
+        ]}
+      />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "8px" }}>Verification queue</h1>
+        <p className="text-muted why-box" style={{ marginTop: 0 }}>
+          ID verification resolves automatically via Persona except when it comes back
+          anything other than &quot;approved&quot; — right to work and DBS always land here,
+          since neither has a self-serve API to check automatically.
+        </p>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      <label style={{ display: "block", margin: "1rem 0" }}>
-        Reason (required for every decision below)
-        <input
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="e.g. Checked gov.uk/view-right-to-work, valid until 2028"
-          style={{ display: "block", width: "100%" }}
-        />
-      </label>
+        <div className="field" style={{ margin: "16px 0" }}>
+          <label>Reason (required for every decision below)</label>
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="e.g. Checked gov.uk/view-right-to-work, valid until 2028"
+          />
+        </div>
 
-      {workers === null ? (
-        <p>Loading…</p>
-      ) : workers.length === 0 ? (
-        <p>Nothing pending.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {workers.map((w) => (
-            <li key={w.id} style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1rem" }}>
-              <strong>{w.name}</strong> — {WORKER_ROLE_LABELS[w.primaryRole]}
+        {workers === null ? (
+          <p className="text-muted">Loading…</p>
+        ) : workers.length === 0 ? (
+          <p className="text-muted">Nothing pending.</p>
+        ) : (
+          workers.map((w) => (
+            <div key={w.id} className="card">
+              <strong>{w.name}</strong>{" "}
+              <span className="text-muted" style={{ fontSize: "12.5px" }}>
+                {WORKER_ROLE_LABELS[w.primaryRole]}
+              </span>
 
               {w.idVerificationStatus === "pending" && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  {FIELD_LABELS.idVerificationStatus}: pending
-                  {w.personaInquiryId && <> — Persona inquiry {w.personaInquiryId}</>}
+                <div style={{ marginTop: "10px" }}>
+                  <span className="badge pending">{FIELD_LABELS.idVerificationStatus}</span>
+                  {w.personaInquiryId && (
+                    <span className="text-muted" style={{ fontSize: "12.5px" }}>
+                      {" "}— Persona inquiry {w.personaInquiryId}
+                    </span>
+                  )}
                   <DecisionButtons
                     busy={busyKey === `${w.id}:idVerificationStatus`}
                     onDecide={(status) => decide(w.id, "idVerificationStatus", status)}
@@ -120,12 +129,11 @@ export default function AdminVerificationPage() {
               )}
 
               {w.rightToWorkStatus === "pending" && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  {FIELD_LABELS.rightToWorkStatus}: pending
+                <div style={{ marginTop: "10px" }}>
+                  <span className="badge pending">{FIELD_LABELS.rightToWorkStatus}</span>
                   {w.rightToWorkMethod === "share_code" && w.rightToWorkShareCode && (
-                    <>
-                      {" "}
-                      — share code <strong>{w.rightToWorkShareCode}</strong>, DOB{" "}
+                    <p style={{ fontSize: "12.5px", margin: "6px 0" }}>
+                      Share code <strong>{w.rightToWorkShareCode}</strong>, DOB{" "}
                       {w.rightToWorkDob && new Date(w.rightToWorkDob).toLocaleDateString("en-GB")}.
                       Check at{" "}
                       <a
@@ -136,18 +144,17 @@ export default function AdminVerificationPage() {
                         gov.uk/view-right-to-work
                       </a>
                       .
-                    </>
+                    </p>
                   )}
                   {w.rightToWorkMethod === "manual_document" && (
-                    <>
-                      {" "}
-                      — <strong>manual passport check needed</strong>: {w.rightToWorkNationality} citizen,
+                    <p style={{ fontSize: "12.5px", margin: "6px 0" }}>
+                      <strong>Manual passport check needed</strong>: {w.rightToWorkNationality} citizen,
                       passport <strong>{w.rightToWorkPassportNumber}</strong>, DOB{" "}
                       {w.rightToWorkDob && new Date(w.rightToWorkDob).toLocaleDateString("en-GB")}.
                       British/Irish citizens aren&apos;t issued a share code — arrange to physically
                       inspect this worker&apos;s original passport in person before confirming. A photo
                       or scan is not sufficient evidence for this check.
-                    </>
+                    </p>
                   )}
                   <DecisionButtons
                     busy={busyKey === `${w.id}:rightToWorkStatus`}
@@ -157,20 +164,24 @@ export default function AdminVerificationPage() {
               )}
 
               {w.dbsStatus === "pending" && (
-                <div style={{ marginTop: "0.5rem" }}>
-                  {FIELD_LABELS.dbsStatus}: pending
-                  {w.dbsApplicationRef && <> — application ref {w.dbsApplicationRef}</>}
+                <div style={{ marginTop: "10px" }}>
+                  <span className="badge pending">{FIELD_LABELS.dbsStatus}</span>
+                  {w.dbsApplicationRef && (
+                    <span className="text-muted" style={{ fontSize: "12.5px" }}>
+                      {" "}— application ref {w.dbsApplicationRef}
+                    </span>
+                  )}
                   <DecisionButtons
                     busy={busyKey === `${w.id}:dbsStatus`}
                     onDecide={(status) => decide(w.id, "dbsStatus", status)}
                   />
                 </div>
               )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -182,14 +193,13 @@ function DecisionButtons({
   onDecide: (status: "verified" | "rejected") => void;
 }) {
   return (
-    <>
-      {" "}
-      <button disabled={busy} onClick={() => onDecide("verified")}>
+    <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+      <button className="btn primary" disabled={busy} onClick={() => onDecide("verified")}>
         Verify
-      </button>{" "}
-      <button disabled={busy} onClick={() => onDecide("rejected")}>
+      </button>
+      <button className="btn ghost" disabled={busy} onClick={() => onDecide("rejected")}>
         Reject
       </button>
-    </>
+    </div>
   );
 }

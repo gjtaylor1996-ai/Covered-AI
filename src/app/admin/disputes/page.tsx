@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 
 interface Dispute {
   id: string;
@@ -64,52 +64,64 @@ export default function AdminDisputesPage() {
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/">&larr; Home</Link> · <Link href="/admin/verification">Verification queue</Link>{" "}
-        · <Link href="/admin/dashboard">Dashboard</Link>
-      </p>
-      <h1>Dispute queue</h1>
-      <p style={{ color: "#555" }}>
-        &quot;Objective&quot; means there&apos;s independent evidence (a Stripe payment
-        timestamp) corroborating the shift happened as recorded — still a human decision, just
-        with more to go on. Automated triage only ever sets that label; it never resolves a
-        dispute itself.
-      </p>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+    <div className="page">
+      <AppHeader
+        links={[
+          { href: "/", label: "Home" },
+          { href: "/admin/verification", label: "Verification" },
+          { href: "/admin/dashboard", label: "Dashboard" },
+        ]}
+      />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "8px" }}>Dispute queue</h1>
+        <p className="text-muted why-box" style={{ marginTop: 0 }}>
+          &quot;Objective&quot; means there&apos;s independent evidence (a Stripe payment
+          timestamp) corroborating the shift happened as recorded — still a human decision, just
+          with more to go on. Automated triage only ever sets that label; it never resolves a
+          dispute itself.
+        </p>
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      {disputes === null ? (
-        <p>Loading…</p>
-      ) : disputes.length === 0 ? (
-        <p>Nothing pending.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {disputes.map((d) => (
-            <li key={d.id} style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1rem" }}>
-              <p>
+        <div className="section-title">Pending</div>
+
+        {disputes === null ? (
+          <p className="text-muted">Loading…</p>
+        ) : disputes.length === 0 ? (
+          <p className="text-muted">Nothing pending.</p>
+        ) : (
+          disputes.map((d) => (
+            <div key={d.id} className="card">
+              <p style={{ fontSize: "13.5px" }}>
                 Raised by <strong>{d.raisedBy}</strong> against{" "}
-                <strong>{d.targetType.replace("_", " ")}</strong> —{" "}
-                <span style={{ textTransform: "uppercase", fontSize: "0.8em" }}>{d.checkType}</span>
+                <strong>{d.targetType.replace("_", " ")}</strong>{" "}
+                {d.checkType && <span className="badge pending">{d.checkType}</span>}
               </p>
-              <p><strong>Reason:</strong> {d.reason}</p>
-              <p><strong>Note:</strong> {d.note}</p>
-              {d.evidence && <p style={{ color: "#276" }}><strong>Evidence:</strong> {d.evidence}</p>}
-              <input
-                placeholder="Reason for resolution (required)"
-                value={reasons[d.id] ?? ""}
-                onChange={(e) => setReasons((r) => ({ ...r, [d.id]: e.target.value }))}
-                style={{ width: "100%", marginBottom: "0.5rem" }}
-              />
-              <button disabled={busyId === d.id} onClick={() => resolve(d, "resolved_upheld")}>
-                Uphold original record
-              </button>{" "}
-              <button disabled={busyId === d.id} onClick={() => resolve(d, "resolved_excluded")}>
-                Exclude from score
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+              <p style={{ fontSize: "13px" }}><strong>Reason:</strong> {d.reason}</p>
+              <p style={{ fontSize: "13px" }}><strong>Note:</strong> {d.note}</p>
+              {d.evidence && (
+                <p className="text-success" style={{ fontSize: "13px" }}>
+                  <strong>Evidence:</strong> {d.evidence}
+                </p>
+              )}
+              <div className="field">
+                <input
+                  placeholder="Reason for resolution (required)"
+                  value={reasons[d.id] ?? ""}
+                  onChange={(e) => setReasons((r) => ({ ...r, [d.id]: e.target.value }))}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button className="btn primary" disabled={busyId === d.id} onClick={() => resolve(d, "resolved_upheld")}>
+                  Uphold original record
+                </button>
+                <button className="btn ghost" disabled={busyId === d.id} onClick={() => resolve(d, "resolved_excluded")}>
+                  Exclude from score
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }

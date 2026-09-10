@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { VerificationPanel } from "../verification-panel";
 import { HireRequestsPanel } from "../hire-requests-panel";
 import { formatTime12h } from "@/components/TimeInput";
+import { AppHeader } from "@/components/AppHeader";
 
 interface ShiftListItem {
   id: string;
@@ -168,115 +168,108 @@ export default function WorkerShiftsPage() {
     setDisputeNote("");
   }
 
+  const statusLabel: Record<string, string> = {
+    offered: "pending",
+    confirmed: "confirmed",
+    completed: "confirmed",
+    cancelled: "rejected",
+    no_show: "rejected",
+  };
+
   return (
-    <main style={{ maxWidth: 720, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/">&larr; Home</Link>
-      </p>
-      <h1>Your shifts</h1>
+    <div className="page">
+      <AppHeader links={[{ href: "/", label: "Home" }]} />
 
-      <HireRequestsPanel />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Your shifts</h1>
 
-      <VerificationPanel />
+        <HireRequestsPanel />
 
-      {score && (
-        <div style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>
-          <strong>
-            Reliability: {score.reliabilityScore ?? "—"} ({score.reliabilityTier})
-          </strong>
-          <p style={{ margin: "0.25rem 0 0", color: "#555" }}>{score.plainLanguageSummary}</p>
-        </div>
-      )}
+        <VerificationPanel />
 
-      {payoutsConnected === false && (
-        <p>
-          <button disabled={connecting} onClick={connectPayouts}>
-            {connecting ? "Redirecting…" : "Connect payouts"}
-          </button>{" "}
-          — you won&apos;t be paid for completed shifts until this is set up.
-        </p>
-      )}
+        {score && (
+          <div className="card-dark score-hero">
+            <div className="score-stamp">
+              <div className="num">{score.reliabilityScore ?? "—"}</div>
+              <div className="tag">{score.reliabilityTier}</div>
+            </div>
+            <div className="score-copy">
+              <div className="lbl">Reliability score</div>
+              <p>{score.plainLanguageSummary}</p>
+            </div>
+          </div>
+        )}
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+        {payoutsConnected === false && (
+          <div className="why-box">
+            <button className="btn primary" disabled={connecting} onClick={connectPayouts} style={{ marginRight: "10px" }}>
+              {connecting ? "Redirecting…" : "Connect payouts"}
+            </button>
+            you won&apos;t be paid for completed shifts until this is set up.
+          </div>
+        )}
 
-      {shifts === null ? (
-        <p>Loading…</p>
-      ) : shifts.length === 0 ? (
-        <p>No shifts yet.</p>
-      ) : (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {shifts.map((shift) => (
-            <li
-              key={shift.id}
-              style={{ borderBottom: "1px solid #eee", padding: "0.75rem 0" }}
-            >
-              <div>
-                <strong>{WORKER_ROLE_LABELS[shift.role]}</strong> at{" "}
-                {shift.venue.name} —{" "}
-                {new Date(shift.date).toLocaleDateString("en-GB")},{" "}
-                {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}, £{shift.hourlyRate}/hr
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+
+        <div className="section-title">Shifts</div>
+
+        {shifts === null ? (
+          <p className="text-muted">Loading…</p>
+        ) : shifts.length === 0 ? (
+          <p className="text-muted">No shifts yet.</p>
+        ) : (
+          shifts.map((shift) => (
+            <div key={shift.id} className="card">
+              <div className="shift-top">
+                <div>
+                  <div className="shift-role">{WORKER_ROLE_LABELS[shift.role]}</div>
+                  <div className="shift-venue">{shift.venue.name}</div>
+                </div>
+                <div className="shift-pay">£{shift.hourlyRate}/hr</div>
               </div>
-              <div>
-                Status: {shift.status}
+              <div className="shift-meta">
+                <span>📅 {new Date(shift.date).toLocaleDateString("en-GB")}</span>
+                <span>🕔 {formatTime12h(shift.startTime)}–{formatTime12h(shift.endTime)}</span>
+              </div>
+              <span className={`badge ${statusLabel[shift.status] ?? "pending"}`}>{shift.status.replace("_", " ")}</span>
+
+              <div style={{ marginTop: "10px" }}>
                 {shift.status === "offered" && (
-                  <>
-                    {" "}
-                    <button
-                      disabled={busyId === shift.id}
-                      onClick={() => respond(shift.id, true)}
-                    >
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button className="btn primary" disabled={busyId === shift.id} onClick={() => respond(shift.id, true)}>
                       Accept
-                    </button>{" "}
-                    <button
-                      disabled={busyId === shift.id}
-                      onClick={() => respond(shift.id, false)}
-                    >
+                    </button>
+                    <button className="btn ghost" disabled={busyId === shift.id} onClick={() => respond(shift.id, false)}>
                       Decline
                     </button>
-                  </>
+                  </div>
                 )}
                 {shift.status === "confirmed" && (
-                  <>
-                    {" "}
-                    <button
-                      disabled={busyId === shift.id}
-                      onClick={() => cancelShift(shift.id)}
-                    >
-                      Cancel
-                    </button>
-                  </>
+                  <button className="btn ghost" disabled={busyId === shift.id} onClick={() => cancelShift(shift.id)}>
+                    Cancel
+                  </button>
                 )}
                 {shift.status === "completed" &&
                   (ratingId === shift.id ? (
-                    <>
-                      {" "}
-                      <button
-                        disabled={busyId === shift.id}
-                        onClick={() => rateVenue(shift.id, true)}
-                      >
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button className="btn primary" disabled={busyId === shift.id} onClick={() => rateVenue(shift.id, true)}>
                         Good experience
-                      </button>{" "}
-                      <button
-                        disabled={busyId === shift.id}
-                        onClick={() => rateVenue(shift.id, false)}
-                      >
+                      </button>
+                      <button className="btn ghost" disabled={busyId === shift.id} onClick={() => rateVenue(shift.id, false)}>
                         Had issues
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <>
-                      {" "}
-                      <button onClick={() => setRatingId(shift.id)}>
-                        Rate this venue
-                      </button>
-                    </>
+                    <button className="btn ghost" onClick={() => setRatingId(shift.id)}>
+                      Rate this venue
+                    </button>
                   ))}
                 {shift.shiftFeedback &&
                   ["completed", "no_show"].includes(shift.status) &&
                   (disputedFeedback.has(shift.shiftFeedback.id) ? (
-                    <span style={{ color: "#555" }}> — dispute submitted</span>
+                    <span className="text-muted" style={{ fontSize: "12px" }}> Dispute submitted</span>
                   ) : disputingId === shift.id ? (
-                    <div style={{ marginTop: "0.5rem", display: "grid", gap: "0.5rem" }}>
+                    <div style={{ marginTop: "10px", display: "grid", gap: "8px" }}>
                       <input
                         placeholder="Reason (e.g. I was on time, this is wrong)"
                         value={disputeReason}
@@ -287,29 +280,23 @@ export default function WorkerShiftsPage() {
                         value={disputeNote}
                         onChange={(e) => setDisputeNote(e.target.value)}
                       />
-                      <div>
-                        <button
-                          disabled={busyId === shift.id}
-                          onClick={() => submitDispute(shift.shiftFeedback!.id)}
-                        >
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button className="btn primary" disabled={busyId === shift.id} onClick={() => submitDispute(shift.shiftFeedback!.id)}>
                           Submit dispute
-                        </button>{" "}
-                        <button onClick={() => setDisputingId(null)}>Cancel</button>
+                        </button>
+                        <button className="btn ghost" onClick={() => setDisputingId(null)}>Cancel</button>
                       </div>
                     </div>
                   ) : (
-                    <>
-                      {" "}
-                      <button onClick={() => setDisputingId(shift.id)}>
-                        Dispute this
-                      </button>
-                    </>
+                    <button className="btn ghost" onClick={() => setDisputingId(shift.id)}>
+                      Dispute this
+                    </button>
                   ))}
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }

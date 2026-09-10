@@ -212,48 +212,68 @@ export function VerificationPanel() {
 
   if (!profile) return null;
 
-  return (
-    <section style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>
-      <h2 style={{ marginTop: 0 }}>Profile &amp; verification</h2>
-      {notice && <p style={{ color: "#276" }}>{notice}</p>}
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+  function statusBadge(status: string) {
+    return <span className={`badge ${status}`}>{status.replace("_", " ")}</span>;
+  }
 
-      <details open={!profile.postcode}>
-        <summary>Profile ({WORKER_ROLE_LABELS[profile.primaryRole]}, {profile.postcode || "no postcode set"})</summary>
-        <form onSubmit={saveProfile} style={{ display: "grid", gap: "0.5rem", marginTop: "0.5rem" }}>
-          <label>
-            Role
-            <select value={role} onChange={(e) => setRole(e.target.value as WorkerRoleKey)} style={{ display: "block", width: "100%" }}>
+  return (
+    <section className="card" style={{ padding: "18px 20px" }}>
+      <h2 style={{ fontSize: "17px", marginBottom: "4px" }}>Profile &amp; verification</h2>
+      {notice && <p className="mono" style={{ color: "var(--green)", fontSize: "12.5px" }}>{notice}</p>}
+      {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+
+      <details open={!profile.postcode} style={{ marginTop: "10px" }}>
+        <summary style={{ cursor: "pointer", fontSize: "13.5px", fontWeight: 600 }}>
+          Profile ({WORKER_ROLE_LABELS[profile.primaryRole]}, {profile.postcode || "no postcode set"})
+        </summary>
+        <form onSubmit={saveProfile} style={{ marginTop: "12px" }}>
+          <div className="field">
+            <label>Role</label>
+            <select value={role} onChange={(e) => setRole(e.target.value as WorkerRoleKey)}>
               {Object.entries(WORKER_ROLE_LABELS).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
-          </label>
-          <label>
-            Postcode
-            <input value={postcode} onChange={(e) => setPostcode(e.target.value)} style={{ display: "block", width: "100%" }} />
-          </label>
-          <label>
-            Years experience
-            <input type="number" min="0" step="0.5" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} style={{ display: "block", width: "100%" }} />
-          </label>
-          <label>
-            Hourly rate (£)
-            <input type="number" min="0" step="0.5" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} style={{ display: "block", width: "100%" }} />
-          </label>
-          <label>
-            Max travel distance (mi)
-            <input type="number" min="0" value={maxTravelDistanceMi} onChange={(e) => setMaxTravelDistanceMi(e.target.value)} style={{ display: "block", width: "100%" }} />
-          </label>
+          </div>
+          <div className="field">
+            <label>Postcode</label>
+            <input value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Years experience</label>
+            <input type="number" min="0" step="0.5" value={yearsExperience} onChange={(e) => setYearsExperience(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Hourly rate (£)</label>
+            <input type="number" min="0" step="0.5" value={hourlyRate} onChange={(e) => setHourlyRate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label>Max travel distance (mi)</label>
+            <input type="number" min="0" value={maxTravelDistanceMi} onChange={(e) => setMaxTravelDistanceMi(e.target.value)} />
+          </div>
           {availability && (
-            <div>
-              Available on
-              <div style={{ display: "grid", gap: "0.4rem", marginTop: "0.25rem" }}>
+            <div className="field">
+              <label>Available on</label>
+              <div style={{ display: "grid", gap: "8px", marginTop: "4px" }}>
                 {DAYS.map((day) => (
-                  <div key={day} style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: "0.25rem", width: "3.5rem" }}>
+                  <div key={day} style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        width: "3.5rem",
+                        textTransform: "capitalize",
+                        fontFamily: "'IBM Plex Sans', sans-serif",
+                        fontSize: "13px",
+                        letterSpacing: "normal",
+                        color: "var(--ink)",
+                        marginBottom: 0,
+                      }}
+                    >
                       <input
                         type="checkbox"
+                        style={{ width: "auto" }}
                         checked={availability[day].enabled}
                         onChange={(e) =>
                           setAvailability((a) =>
@@ -271,7 +291,7 @@ export function VerificationPanel() {
                             setAvailability((a) => (a ? { ...a, [day]: { ...a[day], start: v } } : a))
                           }
                         />
-                        <span>to</span>
+                        <span className="text-muted" style={{ fontSize: "12.5px" }}>to</span>
                         <TimeInput
                           value={availability[day].end}
                           onChange={(v) =>
@@ -285,39 +305,39 @@ export function VerificationPanel() {
               </div>
             </div>
           )}
-          <button type="submit" disabled={busy}>Save profile</button>
+          <button type="submit" className="btn primary" disabled={busy}>Save profile</button>
         </form>
       </details>
 
-      <hr style={{ margin: "1rem 0" }} />
+      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
 
-      <p>ID verification: <strong>{profile.idVerificationStatus}</strong></p>
+      <p style={{ fontSize: "13.5px" }}>ID verification {statusBadge(profile.idVerificationStatus)}</p>
       {profile.idVerificationStatus !== "verified" && (
-        <form onSubmit={submitId} style={{ display: "grid", gap: "0.5rem" }}>
-          <p style={{ color: "#555", margin: 0 }}>
+        <form onSubmit={submitId}>
+          <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
             You&apos;ll be redirected to Persona to scan your ID and take a selfie.
           </p>
-          <label>
-            Date of birth
-            <input type="date" required value={idDob} onChange={(e) => setIdDob(e.target.value)} style={{ display: "block" }} />
-          </label>
-          <button type="submit" disabled={busy}>Start ID verification</button>
+          <div className="field" style={{ maxWidth: "220px" }}>
+            <label>Date of birth</label>
+            <input type="date" required value={idDob} onChange={(e) => setIdDob(e.target.value)} />
+          </div>
+          <button type="submit" className="btn primary" disabled={busy}>Start ID verification</button>
         </form>
       )}
 
-      <hr style={{ margin: "1rem 0" }} />
+      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
 
-      <p>Right to work: <strong>{profile.rightToWorkStatus}</strong></p>
+      <p style={{ fontSize: "13.5px" }}>Right to work {statusBadge(profile.rightToWorkStatus)}</p>
       {profile.rightToWorkStatus !== "verified" && (
-        <form onSubmit={submitRtw} style={{ display: "grid", gap: "0.5rem" }}>
-          <div>
-            <label style={{ marginRight: "1rem" }}>
+        <form onSubmit={submitRtw}>
+          <div className="radio-row" style={{ marginBottom: "12px" }}>
+            <label>
               <input
                 type="radio"
                 name="rtwMethod"
                 checked={rtwMethod === "share_code"}
                 onChange={() => setRtwMethod("share_code")}
-              />{" "}
+              />
               I have a share code
             </label>
             <label>
@@ -326,65 +346,62 @@ export function VerificationPanel() {
                 name="rtwMethod"
                 checked={rtwMethod === "manual_document"}
                 onChange={() => setRtwMethod("manual_document")}
-              />{" "}
+              />
               I&apos;m a British or Irish citizen
             </label>
           </div>
 
           {rtwMethod === "share_code" ? (
             <>
-              <p style={{ color: "#555", margin: 0 }}>
+              <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
                 Get a share code at{" "}
                 <a href="https://www.gov.uk/prove-right-to-work" target="_blank" rel="noreferrer">
                   gov.uk/prove-right-to-work
                 </a>.
               </p>
-              <label>
-                Share code
+              <div className="field" style={{ maxWidth: "220px" }}>
+                <label>Share code</label>
                 <input
                   value={shareCode}
                   onChange={(e) => setShareCode(e.target.value)}
                   maxLength={9}
                   placeholder="e.g. W9ND2SGW3"
-                  style={{ display: "block" }}
                 />
-              </label>
+              </div>
             </>
           ) : (
             <>
-              <p style={{ color: "#555", margin: 0 }}>
+              <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
                 British and Irish citizens aren&apos;t issued a share code. Enter your details below
                 and bring your original passport in — an admin will need to check it in person
                 before this can be verified.
               </p>
-              <label>
-                Nationality
+              <div className="field" style={{ maxWidth: "220px" }}>
+                <label>Nationality</label>
                 <select
                   value={rtwNationality}
                   onChange={(e) => setRtwNationality(e.target.value as "British" | "Irish")}
-                  style={{ display: "block" }}
                 >
                   <option value="British">British</option>
                   <option value="Irish">Irish</option>
                 </select>
-              </label>
-              <label>
-                Passport number
+              </div>
+              <div className="field" style={{ maxWidth: "220px" }}>
+                <label>Passport number</label>
                 <input
                   value={rtwPassportNumber}
                   onChange={(e) => setRtwPassportNumber(e.target.value)}
                   placeholder="e.g. 123456789"
-                  style={{ display: "block" }}
                 />
-              </label>
+              </div>
             </>
           )}
 
-          <label>
-            Date of birth
-            <input type="date" required value={rtwDob} onChange={(e) => setRtwDob(e.target.value)} style={{ display: "block" }} />
-          </label>
-          <button type="submit" disabled={busy}>
+          <div className="field" style={{ maxWidth: "220px" }}>
+            <label>Date of birth</label>
+            <input type="date" required value={rtwDob} onChange={(e) => setRtwDob(e.target.value)} />
+          </div>
+          <button type="submit" className="btn primary" disabled={busy}>
             {rtwMethod === "share_code" ? "Submit share code" : "Submit details"}
           </button>
         </form>
@@ -392,33 +409,36 @@ export function VerificationPanel() {
 
       {profile.dbsStatus !== "not_required" && (
         <>
-          <hr style={{ margin: "1rem 0" }} />
-          <p>DBS check: <strong>{profile.dbsStatus}</strong></p>
+          <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
+          <p style={{ fontSize: "13.5px" }}>DBS check {statusBadge(profile.dbsStatus)}</p>
           {profile.dbsStatus !== "verified" && (
-            <form onSubmit={submitDbs} style={{ display: "grid", gap: "0.5rem" }}>
-              <label>
-                DBS application reference
-                <input value={dbsRef} onChange={(e) => setDbsRef(e.target.value)} style={{ display: "block" }} />
-              </label>
-              <button type="submit" disabled={busy}>Submit DBS reference</button>
+            <form onSubmit={submitDbs}>
+              <div className="field" style={{ maxWidth: "260px" }}>
+                <label>DBS application reference</label>
+                <input value={dbsRef} onChange={(e) => setDbsRef(e.target.value)} />
+              </div>
+              <button type="submit" className="btn primary" disabled={busy}>Submit DBS reference</button>
             </form>
           )}
         </>
       )}
 
-      <hr style={{ margin: "1rem 0" }} />
+      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
 
-      <p>
-        CV <span style={{ color: "#555" }}>(optional — not used for shift matching, purely for venues who want it)</span>:{" "}
-        <strong>{profile.cvFileName ?? "none uploaded"}</strong>
+      <p style={{ fontSize: "13.5px" }}>
+        CV{" "}
+        <span className="text-muted" style={{ fontSize: "12px" }}>
+          (optional — not used for shift matching, purely for venues who want it)
+        </span>
+        : <strong>{profile.cvFileName ?? "none uploaded"}</strong>
       </p>
-      <form onSubmit={uploadCv} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-        <input type="file" name="cv" accept="application/pdf" />
-        <button type="submit" disabled={busy}>
+      <form onSubmit={uploadCv} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+        <input type="file" name="cv" accept="application/pdf" style={{ width: "auto" }} />
+        <button type="submit" className="btn primary" disabled={busy}>
           {profile.cvFileName ? "Replace" : "Upload"}
         </button>
         {profile.cvFileName && (
-          <button type="button" disabled={busy} onClick={removeCv}>
+          <button type="button" className="btn ghost" disabled={busy} onClick={removeCv}>
             Remove
           </button>
         )}

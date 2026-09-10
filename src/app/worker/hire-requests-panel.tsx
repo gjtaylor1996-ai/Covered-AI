@@ -47,30 +47,42 @@ export function HireRequestsPanel() {
   if (!requests || pending.length === 0) return null;
 
   return (
-    <section style={{ border: "1px solid #ddd", padding: "1rem", marginBottom: "1.5rem" }}>
-      <h2 style={{ marginTop: 0 }}>Permanent hire offers</h2>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {pending.map((r) => (
-          <li key={r.id} style={{ borderBottom: "1px solid #eee", padding: "0.5rem 0" }}>
-            <strong>{r.venue.name}</strong> is offering <strong>{r.proposedRoleTitle}</strong> at
-            £{r.proposedSalary.toLocaleString()}/yr, starting{" "}
-            {new Date(r.proposedStartDate).toLocaleDateString("en-GB")}.
-            <br />
+    <section className="card-dark">
+      <div className="as-title mono" style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--amber)", marginBottom: "10px" }}>
+        Permanent hire offers
+      </div>
+      {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+      {pending.map((r) => (
+        <div key={r.id} style={{ padding: "10px 0", borderBottom: "1px dashed rgba(242,238,225,0.15)", fontSize: "13px", lineHeight: 1.5 }}>
+          <strong>{r.venue.name}</strong> is offering <strong>{r.proposedRoleTitle}</strong> at
+          £{r.proposedSalary.toLocaleString()}/yr, starting{" "}
+          {new Date(r.proposedStartDate).toLocaleDateString("en-GB")}.
+          <br />
+          <span style={{ color: "var(--steel-light)", fontSize: "12px" }}>
             {r.feeOption === "conversion_fee"
               ? `The venue chose to pay a conversion fee${r.feeAmount ? ` (£${r.feeAmount.toFixed(2)})` : ""} rather than an extended hire period — this doesn't cost you anything.`
               : "The venue chose an extended hire period rather than a conversion fee."}
-            <div style={{ marginTop: "0.25rem" }}>
-              <button disabled={busyId === r.id} onClick={() => respond(r.id, true)}>
-                Accept
-              </button>{" "}
-              <button disabled={busyId === r.id} onClick={() => respond(r.id, false)}>
-                Decline
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+          </span>
+          <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
+            <button
+              className="btn primary"
+              disabled={busyId === r.id}
+              onClick={() => respond(r.id, true)}
+              style={{ borderColor: "var(--paper-light)" }}
+            >
+              Accept
+            </button>
+            <button
+              className="btn ghost"
+              disabled={busyId === r.id}
+              onClick={() => respond(r.id, false)}
+              style={{ borderColor: "var(--paper-light)", color: "var(--paper-light)" }}
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      ))}
     </section>
   );
 }

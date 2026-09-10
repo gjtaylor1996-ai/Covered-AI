@@ -30,37 +30,38 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1rem" }}>
-      <h1>Log in</h1>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
-        <label>
-          Email
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Logging in…" : "Log in"}
-        </button>
-      </form>
-      <p>
-        No account? <Link href="/signup">Sign up</Link>
-      </p>
-    </main>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="brand-mark">Co</div>
+        <h1 style={{ fontSize: "22px", marginBottom: "16px" }}>Log in</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+          <button type="submit" className="btn primary" disabled={submitting} style={{ width: "100%" }}>
+            {submitting ? "Logging in…" : "Log in"}
+          </button>
+        </form>
+        <p style={{ fontSize: "12.5px", marginTop: "14px" }}>
+          No account? <Link href="/signup">Sign up</Link>
+        </p>
+      </div>
+    </div>
   );
 }

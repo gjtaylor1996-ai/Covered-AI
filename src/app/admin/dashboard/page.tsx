@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { AppHeader } from "@/components/AppHeader";
 
 interface DashboardStats {
   openDisputeCount: number;
@@ -82,66 +82,86 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: "3rem auto", padding: "0 1rem" }}>
-      <p>
-        <Link href="/">&larr; Home</Link> · <Link href="/admin/verification">Verification queue</Link>{" "}
-        · <Link href="/admin/disputes">Disputes</Link>
-      </p>
-      <h1>Ops dashboard</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+    <div className="page">
+      <AppHeader
+        links={[
+          { href: "/", label: "Home" },
+          { href: "/admin/verification", label: "Verification" },
+          { href: "/admin/disputes", label: "Disputes" },
+        ]}
+      />
+      <div className="content">
+        <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Ops dashboard</h1>
+        {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      {stats && (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "0.5rem" }}>
-          <li>Open disputes: <strong>{stats.openDisputeCount}</strong></li>
-          <li>
-            Fill rate:{" "}
-            <strong>{stats.fillRate === null ? "—" : `${Math.round(stats.fillRate * 100)}%`}</strong>
-          </li>
-          <li>GMV: <strong>£{(stats.gmvCents / 100).toFixed(2)}</strong></li>
-          <li>Platform revenue (commission): <strong>£{(stats.platformRevenueCents / 100).toFixed(2)}</strong></li>
-          <li>Pending verification backlog: <strong>{stats.verificationBacklog}</strong></li>
-        </ul>
-      )}
+        {stats && (
+          <div className="stat-grid">
+            <div className="stat-tile">
+              <div className="stat-label">Open disputes</div>
+              <div className="stat-value">{stats.openDisputeCount}</div>
+            </div>
+            <div className="stat-tile">
+              <div className="stat-label">Fill rate</div>
+              <div className="stat-value">
+                {stats.fillRate === null ? "—" : `${Math.round(stats.fillRate * 100)}%`}
+              </div>
+            </div>
+            <div className="stat-tile">
+              <div className="stat-label">GMV</div>
+              <div className="stat-value">£{(stats.gmvCents / 100).toFixed(2)}</div>
+            </div>
+            <div className="stat-tile">
+              <div className="stat-label">Platform revenue</div>
+              <div className="stat-value">£{(stats.platformRevenueCents / 100).toFixed(2)}</div>
+            </div>
+            <div className="stat-tile">
+              <div className="stat-label">Verification backlog</div>
+              <div className="stat-value">{stats.verificationBacklog}</div>
+            </div>
+          </div>
+        )}
 
-      <hr style={{ margin: "1.5rem 0" }} />
+        <div className="section-title">Account lookup</div>
+        <form onSubmit={lookup} className="card" style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
+          <div className="field" style={{ flex: 1, marginBottom: 0 }}>
+            <label>Email</label>
+            <input
+              type="email"
+              placeholder="user@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="btn primary" disabled={busy}>Look up</button>
+        </form>
 
-      <h2>Account lookup</h2>
-      <form onSubmit={lookup} style={{ display: "flex", gap: "0.5rem" }}>
-        <input
-          type="email"
-          placeholder="user@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <button type="submit" disabled={busy}>Look up</button>
-      </form>
-
-      {found && (
-        <div style={{ marginTop: "1rem" }}>
-          <p>
-            {found.email} ({found.role}) —{" "}
-            {found.suspendedAt ? (
-              <strong style={{ color: "crimson" }}>suspended: {found.suspendedReason}</strong>
+        {found && (
+          <div className="card">
+            <p style={{ fontSize: "13.5px" }}>
+              {found.email} ({found.role}) —{" "}
+              {found.suspendedAt ? (
+                <span className="badge rejected">suspended: {found.suspendedReason}</span>
+              ) : (
+                <span className="badge confirmed">active</span>
+              )}
+            </p>
+            {!found.suspendedAt ? (
+              <>
+                <div className="field">
+                  <label>Reason (required)</label>
+                  <input
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </div>
+                <button className="btn primary" disabled={busy} onClick={() => setSuspended(true)}>Suspend</button>
+              </>
             ) : (
-              <strong style={{ color: "#276" }}>active</strong>
+              <button className="btn primary" disabled={busy} onClick={() => setSuspended(false)}>Reactivate</button>
             )}
-          </p>
-          {!found.suspendedAt ? (
-            <>
-              <input
-                placeholder="Reason (required)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                style={{ width: "100%", marginBottom: "0.5rem" }}
-              />
-              <button disabled={busy} onClick={() => setSuspended(true)}>Suspend</button>
-            </>
-          ) : (
-            <button disabled={busy} onClick={() => setSuspended(false)}>Reactivate</button>
-          )}
-        </div>
-      )}
-    </main>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

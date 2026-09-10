@@ -37,58 +37,57 @@ export default function SignupPage() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "4rem auto", padding: "0 1rem" }}>
-      <h1>Sign up</h1>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
-        <label>
-          I am a…
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as typeof role)}
-            style={{ display: "block", width: "100%" }}
-          >
-            <option value="worker">Worker</option>
-            <option value="venue_admin">Venue</option>
-          </select>
-        </label>
-        <label>
-          {role === "worker" ? "Full name" : "Venue name"}
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        <label>
-          Email
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        <label>
-          Password
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ display: "block", width: "100%" }}
-          />
-        </label>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={submitting}>
-          {submitting ? "Creating account…" : "Sign up"}
-        </button>
-      </form>
-      <p>
-        Already have an account? <Link href="/login">Log in</Link>
-      </p>
-    </main>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="brand-mark">Co</div>
+        <h1 style={{ fontSize: "22px", marginBottom: "16px" }}>Sign up</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>I am a…</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as typeof role)}
+            >
+              <option value="worker">Worker</option>
+              <option value="venue_admin">Venue</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>{role === "worker" ? "Full name" : "Venue name"}</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+          <button type="submit" className="btn primary" disabled={submitting} style={{ width: "100%" }}>
+            {submitting ? "Creating account…" : "Sign up"}
+          </button>
+        </form>
+        <p style={{ fontSize: "12.5px", marginTop: "14px" }}>
+          Already have an account? <Link href="/login">Log in</Link>
+        </p>
+      </div>
+    </div>
   );
 }
