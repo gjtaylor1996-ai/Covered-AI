@@ -16,6 +16,22 @@ interface PaymentInfo {
   venueChargeFailureReason: string | null;
 }
 
+const PAYMENT_BADGE: Record<string, string> = {
+  pending_setup: "pending",
+  charging: "pending",
+  charged: "pending",
+  paid_out: "confirmed",
+  failed: "rejected",
+};
+
+const PAYMENT_LABEL: Record<string, string> = {
+  pending_setup: "payout pending",
+  charging: "processing",
+  charged: "processing",
+  paid_out: "paid out",
+  failed: "payout failed",
+};
+
 interface ShiftDetail {
   id: string;
   role: WorkerRoleKey;
@@ -370,17 +386,30 @@ export default function VenueShiftDetailPage() {
           <section style={{ marginTop: "16px" }}>
             <div className="section-title" style={{ marginTop: 0 }}>Payment</div>
             <div className="card">
-              <p style={{ fontSize: "13.5px" }}>
-                Worker payout: <span className="badge confirmed">{shift.payment.status.replace(/_/g, " ")}</span>
-                <br />
-                £{(shift.payment.totalAmountCents / 100).toFixed(2)} total (£
-                {(shift.payment.workerAmountCents / 100).toFixed(2)} to worker, £
-                {(shift.payment.commissionAmountCents / 100).toFixed(2)} commission)
+              <p style={{ fontSize: "13.5px", marginBottom: "10px" }}>
+                Worker payout:{" "}
+                <span className={`badge ${PAYMENT_BADGE[shift.payment.status] ?? "pending"}`}>
+                  {PAYMENT_LABEL[shift.payment.status] ?? shift.payment.status.replace(/_/g, " ")}
+                </span>
               </p>
+              <div className="stat-grid" style={{ marginBottom: shift.payment.failureReason ? "10px" : 0 }}>
+                <div className="stat-tile">
+                  <div className="stat-label">Total</div>
+                  <div className="stat-value">£{(shift.payment.totalAmountCents / 100).toFixed(2)}</div>
+                </div>
+                <div className="stat-tile">
+                  <div className="stat-label">To worker</div>
+                  <div className="stat-value">£{(shift.payment.workerAmountCents / 100).toFixed(2)}</div>
+                </div>
+                <div className="stat-tile">
+                  <div className="stat-label">Commission</div>
+                  <div className="stat-value">£{(shift.payment.commissionAmountCents / 100).toFixed(2)}</div>
+                </div>
+              </div>
               {shift.payment.failureReason && (
                 <p className="text-error" style={{ fontSize: "12.5px" }}>{shift.payment.failureReason}</p>
               )}
-              <p style={{ fontSize: "13.5px" }}>
+              <p style={{ fontSize: "13.5px", marginTop: "10px" }}>
                 Your card charge:{" "}
                 <span className={`badge ${shift.payment.venueChargeFailed ? "rejected" : "confirmed"}`}>
                   {shift.payment.venueChargeFailed ? "failed" : "succeeded"}

@@ -37,7 +37,24 @@ interface ShiftListItem {
     minutesLate: number | null;
     dispute: { status: string; checkType: string | null; evidence: string | null } | null;
   } | null;
+  payment: { status: string; workerAmountCents: number; failureReason: string | null } | null;
 }
+
+const PAYMENT_BADGE: Record<string, string> = {
+  pending_setup: "pending",
+  charging: "pending",
+  charged: "pending",
+  paid_out: "confirmed",
+  failed: "rejected",
+};
+
+const PAYMENT_LABEL: Record<string, string> = {
+  pending_setup: "payout pending",
+  charging: "processing",
+  charged: "processing",
+  paid_out: "paid out",
+  failed: "payout failed",
+};
 
 interface ScoreBreakdown {
   reliabilityScore: number | null;
@@ -280,6 +297,20 @@ export default function WorkerShiftsPage() {
                 )}
               </div>
               <span className={`badge ${statusLabel[shift.status] ?? "pending"}`}>{shift.status.replace("_", " ")}</span>
+              {shift.status === "completed" && shift.payment && (
+                <span
+                  className={`badge ${PAYMENT_BADGE[shift.payment.status] ?? "pending"}`}
+                  style={{ marginLeft: "8px" }}
+                >
+                  {PAYMENT_LABEL[shift.payment.status] ?? shift.payment.status}
+                  {shift.payment.status === "paid_out" && ` · £${(shift.payment.workerAmountCents / 100).toFixed(2)}`}
+                </span>
+              )}
+              {shift.status === "completed" && shift.payment?.status === "failed" && shift.payment.failureReason && (
+                <div className="text-error" style={{ fontSize: "11.5px", marginTop: "6px" }}>
+                  {shift.payment.failureReason}
+                </div>
+              )}
 
               <div style={{ marginTop: "10px" }}>
                 {shift.status === "offered" && (

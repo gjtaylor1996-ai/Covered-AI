@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       shiftFeedback: {
         select: { id: true, confirmedAttendance: true, onTime: true, minutesLate: true },
       },
+      payment: { select: { status: true, workerAmountCents: true, failureReason: true } },
     },
     orderBy: { date: "asc" },
   });
