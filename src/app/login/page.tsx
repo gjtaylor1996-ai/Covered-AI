@@ -127,7 +127,12 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
+            {error && (
+              <div className="error-box">
+                <span className="error-icon">⚠</span>
+                <span>{error}</span>
+              </div>
+            )}
             <button type="submit" className="btn primary" disabled={submitting} style={{ width: "100%" }}>
               {submitting ? "Logging in…" : "Log in"}
             </button>
