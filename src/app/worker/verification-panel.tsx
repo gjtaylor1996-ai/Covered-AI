@@ -152,10 +152,8 @@ export function VerificationPanel() {
     await load();
   }
 
-  async function uploadCv(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const input = e.currentTarget.elements.namedItem("cv") as HTMLInputElement;
-    const file = input.files?.[0];
+  async function uploadCv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
     setError(null);
@@ -163,6 +161,7 @@ export function VerificationPanel() {
     form.set("cv", file);
     const res = await fetch("/api/workers/me/cv", { method: "POST", body: form });
     setBusy(false);
+    e.target.value = "";
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setError(
@@ -174,7 +173,6 @@ export function VerificationPanel() {
       );
       return;
     }
-    input.value = "";
     setNotice("CV uploaded.");
     await load();
   }
@@ -425,24 +423,35 @@ export function VerificationPanel() {
 
       <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
 
-      <p style={{ fontSize: "13.5px" }}>
+      <p style={{ fontSize: "13.5px", marginBottom: "8px" }}>
         CV{" "}
         <span className="text-muted" style={{ fontSize: "12px" }}>
           (optional — not used for shift matching, purely for venues who want it)
         </span>
-        : <strong>{profile.cvFileName ?? "none uploaded"}</strong>
       </p>
-      <form onSubmit={uploadCv} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-        <input type="file" name="cv" accept="application/pdf" style={{ width: "auto" }} />
-        <button type="submit" className="btn primary" disabled={busy}>
-          {profile.cvFileName ? "Replace" : "Upload"}
-        </button>
-        {profile.cvFileName && (
-          <button type="button" className="btn ghost" disabled={busy} onClick={removeCv}>
-            Remove
-          </button>
-        )}
-      </form>
+      <div className="doc-card">
+        <div className="doc-card-info">
+          <div className="doc-icon">📄</div>
+          <div style={{ minWidth: 0 }}>
+            <div className="doc-name">{profile.cvFileName ?? "No CV uploaded"}</div>
+            {profile.cvFileName && <div className="doc-sub">PDF · uploaded</div>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+          <label
+            className={`upload-btn ${profile.cvFileName ? "done" : ""}`}
+            style={busy ? { pointerEvents: "none", opacity: 0.6 } : undefined}
+          >
+            {busy ? "Uploading…" : profile.cvFileName ? "Replace" : "Upload"}
+            <input type="file" accept="application/pdf" disabled={busy} onChange={uploadCv} />
+          </label>
+          {profile.cvFileName && (
+            <button type="button" className="btn ghost" disabled={busy} onClick={removeCv}>
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

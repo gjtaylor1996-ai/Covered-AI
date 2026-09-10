@@ -1066,3 +1066,76 @@ legend {
 .error-box .error-icon {
   flex-shrink: 0;
 }
+
+/* ---------- document upload card ---------- */
+.doc-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--paper-light);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.doc-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.doc-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.doc-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-sub {
+  font-size: 10.5px;
+  color: var(--steel);
+  margin-top: 2px;
+}
+
+.upload-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.upload-btn:hover {
+  background: var(--ink);
+  color: var(--paper-light);
+}
+
+.upload-btn.done {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(63, 110, 82, 0.1);
+}
+
+.upload-btn.done:hover {
+  background: rgba(63, 110, 82, 0.18);
+}
+
+.upload-btn input[type="file"] {
+  display: none;
+}
