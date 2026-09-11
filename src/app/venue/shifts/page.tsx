@@ -163,11 +163,15 @@ export default function VenueShiftsPage() {
         )}
 
         {paymentMethodConnected === false && (
-          <div className="why-box">
-            <button className="btn primary" disabled={connecting} onClick={connectPaymentMethod} style={{ marginRight: "10px" }}>
+          <div className="connect-nudge">
+            <div className="connect-nudge-icon">💳</div>
+            <div className="connect-nudge-copy">
+              <div className="title">Add a payment method</div>
+              <p>Shifts won&apos;t be charged until a card is on file with Stripe.</p>
+            </div>
+            <button className="btn primary" disabled={connecting} onClick={connectPaymentMethod}>
               {connecting ? "Redirecting…" : "Add payment method"}
             </button>
-            shifts won&apos;t be charged until a card is on file.
           </div>
         )}
 

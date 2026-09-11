@@ -258,11 +258,15 @@ export default function WorkerShiftsPage() {
         )}
 
         {payoutsConnected === false && (
-          <div className="why-box">
-            <button className="btn primary" disabled={connecting} onClick={connectPayouts} style={{ marginRight: "10px" }}>
+          <div className="connect-nudge">
+            <div className="connect-nudge-icon">🏦</div>
+            <div className="connect-nudge-copy">
+              <div className="title">Connect payouts</div>
+              <p>You won&apos;t be paid for completed shifts until a bank account is linked via Stripe.</p>
+            </div>
+            <button className="btn primary" disabled={connecting} onClick={connectPayouts}>
               {connecting ? "Redirecting…" : "Connect payouts"}
             </button>
-            you won&apos;t be paid for completed shifts until this is set up.
           </div>
         )}
 
