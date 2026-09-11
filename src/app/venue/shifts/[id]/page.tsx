@@ -230,7 +230,12 @@ export default function VenueShiftDetailPage() {
   if (error && !shift) {
     return (
       <div className="page">
-        <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+        <AppHeader
+          links={[
+            { href: "/venue/shifts", label: "All shifts" },
+            { href: "/venue/disputes", label: "Disputes" },
+          ]}
+        />
         <div className="content">
           <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>
         </div>
@@ -240,7 +245,12 @@ export default function VenueShiftDetailPage() {
   if (!shift) {
     return (
       <div className="page">
-        <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+        <AppHeader
+          links={[
+            { href: "/venue/shifts", label: "All shifts" },
+            { href: "/venue/disputes", label: "Disputes" },
+          ]}
+        />
         <div className="content">
           <p className="text-muted">Loading…</p>
         </div>
@@ -250,7 +260,12 @@ export default function VenueShiftDetailPage() {
 
   return (
     <div className="page">
-      <AppHeader links={[{ href: "/venue/shifts", label: "All shifts" }]} />
+      <AppHeader
+        links={[
+          { href: "/venue/shifts", label: "All shifts" },
+          { href: "/venue/disputes", label: "Disputes" },
+        ]}
+      />
       <div className="content">
         <h1 style={{ fontSize: "22px", marginBottom: "6px" }}>{WORKER_ROLE_LABELS[shift.role]}</h1>
         <p className="text-muted" style={{ fontSize: "13px", margin: "0 0 10px" }}>

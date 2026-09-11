@@ -141,7 +141,13 @@ export default function VenueShiftsPage() {
 
   return (
     <div className="page">
-      <AppHeader links={[{ href: "/", label: "Home" }, { href: "/venue/analytics", label: "Analytics" }]} />
+      <AppHeader
+        links={[
+          { href: "/", label: "Home" },
+          { href: "/venue/analytics", label: "Analytics" },
+          { href: "/venue/disputes", label: "Disputes" },
+        ]}
+      />
       <div className="content">
         <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Your shifts</h1>
 

@@ -106,7 +106,12 @@ export default function VenueAnalyticsPage() {
 
   return (
     <div className="page">
-      <AppHeader links={[{ href: "/venue/shifts", label: "Your shifts" }]} />
+      <AppHeader
+        links={[
+          { href: "/venue/shifts", label: "Your shifts" },
+          { href: "/venue/disputes", label: "Disputes" },
+        ]}
+      />
       <div className="content">
         <h1 style={{ fontSize: "22px", marginBottom: "18px" }}>Analytics</h1>
         {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
