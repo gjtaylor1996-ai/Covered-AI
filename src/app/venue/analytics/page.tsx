@@ -213,59 +213,82 @@ export default function VenueAnalyticsPage() {
         {analytics && (
           <>
             <div className="section-title">Fill rate</div>
-            <div className="stat-tile" style={{ marginBottom: "10px" }}>
-              <div className="stat-value" style={{ fontSize: "16px" }}>
-                {analytics.fillRate === null
-                  ? "No shifts posted yet."
-                  : `${Math.round(analytics.fillRate * 100)}% of posted shifts got filled.`}
+            <div className="stat-tile" style={{ marginBottom: "20px" }}>
+              <div className="stat-label">Of posted shifts filled</div>
+              <div
+                className="stat-value"
+                style={
+                  analytics.fillRate !== null
+                    ? { color: analytics.fillRate >= 0.8 ? "var(--green)" : "var(--amber-deep)" }
+                    : undefined
+                }
+              >
+                {analytics.fillRate === null ? "—" : `${Math.round(analytics.fillRate * 100)}%`}
               </div>
             </div>
 
             <div className="section-title">No-show trend (last 8 weeks)</div>
-            <div className="card" style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Week of</th>
-                    <th>No-show rate</th>
-                    <th>Shifts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.noShowTrend.map((w) => (
-                    <tr key={w.weekStart}>
-                      <td>{w.weekStart}</td>
-                      <td>{w.noShowRate === null ? "—" : `${Math.round(w.noShowRate * 100)}%`}</td>
-                      <td>{w.shiftCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="trend-strip">
+              {analytics.noShowTrend.map((w) => {
+                const hasData = w.shiftCount > 0;
+                const pct = w.noShowRate === null ? null : Math.round(w.noShowRate * 100);
+                const severity = pct === null ? "" : pct >= 20 ? "bad" : pct >= 10 ? "warn" : "";
+                const weekDate = new Date(w.weekStart + "T00:00:00Z");
+                return (
+                  <div key={w.weekStart} className="trend-week">
+                    <div className="trend-week-label">
+                      {weekDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </div>
+                    <div className="trend-bar-track">
+                      {hasData && (
+                        <div
+                          className={`trend-bar-fill ${severity}`}
+                          style={{ height: `${Math.max(4, pct ?? 0)}%` }}
+                        />
+                      )}
+                    </div>
+                    <div className="trend-pct">{pct === null ? "—" : `${pct}%`}</div>
+                    <div className="trend-count">{w.shiftCount} shift{w.shiftCount === 1 ? "" : "s"}</div>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="section-title">Rate benchmark</div>
             {analytics.rateBenchmark.length === 0 ? (
               <p className="text-muted">Post a shift to see how your rates compare.</p>
             ) : (
-              <div className="card" style={{ overflowX: "auto" }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Role</th>
-                      <th>Your avg rate</th>
-                      <th>Platform avg rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {analytics.rateBenchmark.map((r) => (
-                      <tr key={r.role}>
-                        <td>{WORKER_ROLE_LABELS[r.role]}</td>
-                        <td>£{r.venueAvgRate}/hr</td>
-                        <td>£{r.platformAvgRate}/hr</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="card">
+                {analytics.rateBenchmark.map((r) => {
+                  const max = Math.max(r.venueAvgRate, r.platformAvgRate, 1);
+                  return (
+                    <div className="benchmark-row" key={r.role}>
+                      <div className="benchmark-role">{WORKER_ROLE_LABELS[r.role]}</div>
+                      <div className="benchmark-bars">
+                        <div className="benchmark-bar-line">
+                          <span className="benchmark-bar-label">You</span>
+                          <div className="benchmark-bar-track">
+                            <div
+                              className="benchmark-bar-fill venue"
+                              style={{ width: `${(r.venueAvgRate / max) * 100}%` }}
+                            />
+                          </div>
+                          <span className="benchmark-bar-value">£{r.venueAvgRate}/hr</span>
+                        </div>
+                        <div className="benchmark-bar-line">
+                          <span className="benchmark-bar-label">Platform</span>
+                          <div className="benchmark-bar-track">
+                            <div
+                              className="benchmark-bar-fill platform"
+                              style={{ width: `${(r.platformAvgRate / max) * 100}%` }}
+                            />
+                          </div>
+                          <span className="benchmark-bar-value">£{r.platformAvgRate}/hr</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>
