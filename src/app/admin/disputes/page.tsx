@@ -91,12 +91,9 @@ export default function AdminDisputesPage() {
         ) : (
           disputes.map((d) => (
             <div key={d.id} className="card">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px", marginBottom: "10px" }}>
-                <div style={{ fontSize: "13.5px" }}>
-                  Raised by <strong>{d.raisedBy}</strong> against{" "}
-                  <strong>{d.targetType.replace(/_/g, " ")}</strong>
-                </div>
-                {d.checkType && <span className="badge pending">{d.checkType.replace(/_/g, " ")}</span>}
+              <div style={{ fontSize: "13.5px", marginBottom: "10px" }}>
+                Raised by <strong>{d.raisedBy}</strong> against{" "}
+                <strong>{d.targetType.replace(/_/g, " ")}</strong>
               </div>
               <div style={{ marginBottom: "10px" }}>
                 <label style={{ marginBottom: "2px" }}>Reason</label>
@@ -106,10 +103,13 @@ export default function AdminDisputesPage() {
                 <label style={{ marginBottom: "2px" }}>Note</label>
                 <p style={{ fontSize: "13px", margin: 0 }}>{d.note}</p>
               </div>
-              {d.evidence && (
-                <div style={{ marginBottom: "10px" }}>
-                  <label style={{ marginBottom: "2px" }}>Evidence</label>
-                  <p className="text-success" style={{ fontSize: "13px", margin: 0 }}>{d.evidence}</p>
+              {d.checkType && (
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ marginBottom: "4px" }}>Automated check</label>
+                  <span className={`check-badge ${d.checkType}`}>
+                    {d.checkType === "objective" ? "Fast-track" : "Standard review"}
+                  </span>
+                  {d.evidence && <div className="check-evidence">{d.evidence}</div>}
                 </div>
               )}
               <div className="field">
