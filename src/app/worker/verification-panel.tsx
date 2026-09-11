@@ -211,16 +211,25 @@ export function VerificationPanel() {
   if (!profile) return null;
 
   function statusBadge(status: string) {
-    return <span className={`badge ${status}`}>{status.replace("_", " ")}</span>;
+    return <span className={`badge ${status}`} style={{ marginTop: 0 }}>{status.replace("_", " ")}</span>;
+  }
+
+  function cardHeader(title: string, status: string) {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontWeight: 600, fontSize: "13.5px" }}>{title}</div>
+        {statusBadge(status)}
+      </div>
+    );
   }
 
   return (
-    <section className="card" style={{ padding: "18px 20px" }}>
-      <h2 style={{ fontSize: "17px", marginBottom: "4px" }}>Profile &amp; verification</h2>
+    <section>
+      <div className="section-title" style={{ marginTop: 0 }}>Profile &amp; verification</div>
       {notice && <p className="mono" style={{ color: "var(--green)", fontSize: "12.5px" }}>{notice}</p>}
       {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-      <details open={!profile.postcode} style={{ marginTop: "10px" }}>
+      <details className="card" open={!profile.postcode}>
         <summary style={{ cursor: "pointer", fontSize: "13.5px", fontWeight: 600 }}>
           Profile ({WORKER_ROLE_LABELS[profile.primaryRole]}, {profile.postcode || "no postcode set"})
         </summary>
@@ -307,110 +316,109 @@ export function VerificationPanel() {
         </form>
       </details>
 
-      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
+      <div className="card">
+        {cardHeader("ID verification", profile.idVerificationStatus)}
+        {profile.idVerificationStatus !== "verified" && (
+          <form onSubmit={submitId} style={{ marginTop: "12px" }}>
+            <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
+              You&apos;ll be redirected to Persona to scan your ID and take a selfie.
+            </p>
+            <div className="field" style={{ maxWidth: "220px" }}>
+              <label>Date of birth</label>
+              <input type="date" required value={idDob} onChange={(e) => setIdDob(e.target.value)} />
+            </div>
+            <button type="submit" className="btn primary" disabled={busy}>Start ID verification</button>
+          </form>
+        )}
+      </div>
 
-      <p style={{ fontSize: "13.5px" }}>ID verification {statusBadge(profile.idVerificationStatus)}</p>
-      {profile.idVerificationStatus !== "verified" && (
-        <form onSubmit={submitId}>
-          <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
-            You&apos;ll be redirected to Persona to scan your ID and take a selfie.
-          </p>
-          <div className="field" style={{ maxWidth: "220px" }}>
-            <label>Date of birth</label>
-            <input type="date" required value={idDob} onChange={(e) => setIdDob(e.target.value)} />
-          </div>
-          <button type="submit" className="btn primary" disabled={busy}>Start ID verification</button>
-        </form>
-      )}
-
-      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
-
-      <p style={{ fontSize: "13.5px" }}>Right to work {statusBadge(profile.rightToWorkStatus)}</p>
-      {profile.rightToWorkStatus !== "verified" && (
-        <form onSubmit={submitRtw}>
-          <div className="radio-row" style={{ marginBottom: "12px" }}>
-            <label>
-              <input
-                type="radio"
-                name="rtwMethod"
-                checked={rtwMethod === "share_code"}
-                onChange={() => setRtwMethod("share_code")}
-              />
-              I have a share code
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="rtwMethod"
-                checked={rtwMethod === "manual_document"}
-                onChange={() => setRtwMethod("manual_document")}
-              />
-              I&apos;m a British or Irish citizen
-            </label>
-          </div>
-
-          {rtwMethod === "share_code" ? (
-            <>
-              <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
-                Get a share code at{" "}
-                <a href="https://www.gov.uk/prove-right-to-work" target="_blank" rel="noreferrer">
-                  gov.uk/prove-right-to-work
-                </a>.
-              </p>
-              <div className="field" style={{ maxWidth: "220px" }}>
-                <label>Share code</label>
+      <div className="card">
+        {cardHeader("Right to work", profile.rightToWorkStatus)}
+        {profile.rightToWorkStatus !== "verified" && (
+          <form onSubmit={submitRtw} style={{ marginTop: "12px" }}>
+            <div className="radio-row" style={{ marginBottom: "12px" }}>
+              <label>
                 <input
-                  value={shareCode}
-                  onChange={(e) => setShareCode(e.target.value)}
-                  maxLength={9}
-                  placeholder="e.g. W9ND2SGW3"
+                  type="radio"
+                  name="rtwMethod"
+                  checked={rtwMethod === "share_code"}
+                  onChange={() => setRtwMethod("share_code")}
                 />
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
-                British and Irish citizens aren&apos;t issued a share code. Enter your details below
-                and bring your original passport in — an admin will need to check it in person
-                before this can be verified.
-              </p>
-              <div className="field" style={{ maxWidth: "220px" }}>
-                <label>Nationality</label>
-                <select
-                  value={rtwNationality}
-                  onChange={(e) => setRtwNationality(e.target.value as "British" | "Irish")}
-                >
-                  <option value="British">British</option>
-                  <option value="Irish">Irish</option>
-                </select>
-              </div>
-              <div className="field" style={{ maxWidth: "220px" }}>
-                <label>Passport number</label>
+                I have a share code
+              </label>
+              <label>
                 <input
-                  value={rtwPassportNumber}
-                  onChange={(e) => setRtwPassportNumber(e.target.value)}
-                  placeholder="e.g. 123456789"
+                  type="radio"
+                  name="rtwMethod"
+                  checked={rtwMethod === "manual_document"}
+                  onChange={() => setRtwMethod("manual_document")}
                 />
-              </div>
-            </>
-          )}
+                I&apos;m a British or Irish citizen
+              </label>
+            </div>
 
-          <div className="field" style={{ maxWidth: "220px" }}>
-            <label>Date of birth</label>
-            <input type="date" required value={rtwDob} onChange={(e) => setRtwDob(e.target.value)} />
-          </div>
-          <button type="submit" className="btn primary" disabled={busy}>
-            {rtwMethod === "share_code" ? "Submit share code" : "Submit details"}
-          </button>
-        </form>
-      )}
+            {rtwMethod === "share_code" ? (
+              <>
+                <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
+                  Get a share code at{" "}
+                  <a href="https://www.gov.uk/prove-right-to-work" target="_blank" rel="noreferrer">
+                    gov.uk/prove-right-to-work
+                  </a>.
+                </p>
+                <div className="field" style={{ maxWidth: "220px" }}>
+                  <label>Share code</label>
+                  <input
+                    value={shareCode}
+                    onChange={(e) => setShareCode(e.target.value)}
+                    maxLength={9}
+                    placeholder="e.g. W9ND2SGW3"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-muted" style={{ fontSize: "12.5px", margin: "0 0 10px" }}>
+                  British and Irish citizens aren&apos;t issued a share code. Enter your details below
+                  and bring your original passport in — an admin will need to check it in person
+                  before this can be verified.
+                </p>
+                <div className="field" style={{ maxWidth: "220px" }}>
+                  <label>Nationality</label>
+                  <select
+                    value={rtwNationality}
+                    onChange={(e) => setRtwNationality(e.target.value as "British" | "Irish")}
+                  >
+                    <option value="British">British</option>
+                    <option value="Irish">Irish</option>
+                  </select>
+                </div>
+                <div className="field" style={{ maxWidth: "220px" }}>
+                  <label>Passport number</label>
+                  <input
+                    value={rtwPassportNumber}
+                    onChange={(e) => setRtwPassportNumber(e.target.value)}
+                    placeholder="e.g. 123456789"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="field" style={{ maxWidth: "220px" }}>
+              <label>Date of birth</label>
+              <input type="date" required value={rtwDob} onChange={(e) => setRtwDob(e.target.value)} />
+            </div>
+            <button type="submit" className="btn primary" disabled={busy}>
+              {rtwMethod === "share_code" ? "Submit share code" : "Submit details"}
+            </button>
+          </form>
+        )}
+      </div>
 
       {profile.dbsStatus !== "not_required" && (
-        <>
-          <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
-          <p style={{ fontSize: "13.5px" }}>DBS check {statusBadge(profile.dbsStatus)}</p>
+        <div className="card">
+          {cardHeader("DBS check", profile.dbsStatus)}
           {profile.dbsStatus !== "verified" && (
-            <form onSubmit={submitDbs}>
+            <form onSubmit={submitDbs} style={{ marginTop: "12px" }}>
               <div className="field" style={{ maxWidth: "260px" }}>
                 <label>DBS application reference</label>
                 <input value={dbsRef} onChange={(e) => setDbsRef(e.target.value)} />
@@ -418,38 +426,38 @@ export function VerificationPanel() {
               <button type="submit" className="btn primary" disabled={busy}>Submit DBS reference</button>
             </form>
           )}
-        </>
+        </div>
       )}
 
-      <hr style={{ margin: "18px 0", border: "none", borderTop: "1px solid var(--line)" }} />
-
-      <p style={{ fontSize: "13.5px", marginBottom: "8px" }}>
-        CV{" "}
-        <span className="text-muted" style={{ fontSize: "12px" }}>
-          (optional — not used for shift matching, purely for venues who want it)
-        </span>
-      </p>
-      <div className="doc-card">
-        <div className="doc-card-info">
-          <div className="doc-icon">📄</div>
-          <div style={{ minWidth: 0 }}>
-            <div className="doc-name">{profile.cvFileName ?? "No CV uploaded"}</div>
-            {profile.cvFileName && <div className="doc-sub">PDF · uploaded</div>}
+      <div className="card">
+        <p style={{ fontSize: "13.5px", marginBottom: "8px" }}>
+          CV{" "}
+          <span className="text-muted" style={{ fontSize: "12px" }}>
+            (optional — not used for shift matching, purely for venues who want it)
+          </span>
+        </p>
+        <div className="doc-card">
+          <div className="doc-card-info">
+            <div className="doc-icon">📄</div>
+            <div style={{ minWidth: 0 }}>
+              <div className="doc-name">{profile.cvFileName ?? "No CV uploaded"}</div>
+              {profile.cvFileName && <div className="doc-sub">PDF · uploaded</div>}
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          <label
-            className={`upload-btn ${profile.cvFileName ? "done" : ""}`}
-            style={busy ? { pointerEvents: "none", opacity: 0.6 } : undefined}
-          >
-            {busy ? "Uploading…" : profile.cvFileName ? "Replace" : "Upload"}
-            <input type="file" accept="application/pdf" disabled={busy} onChange={uploadCv} />
-          </label>
-          {profile.cvFileName && (
-            <button type="button" className="btn ghost" disabled={busy} onClick={removeCv}>
-              Remove
-            </button>
-          )}
+          <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            <label
+              className={`upload-btn ${profile.cvFileName ? "done" : ""}`}
+              style={busy ? { pointerEvents: "none", opacity: 0.6 } : undefined}
+            >
+              {busy ? "Uploading…" : profile.cvFileName ? "Replace" : "Upload"}
+              <input type="file" accept="application/pdf" disabled={busy} onChange={uploadCv} />
+            </label>
+            {profile.cvFileName && (
+              <button type="button" className="btn ghost" disabled={busy} onClick={removeCv}>
+                Remove
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>
