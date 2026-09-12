@@ -40,7 +40,7 @@ export default function AdminVerificationPage() {
   const [workers, setWorkers] = useState<QueueWorker[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
-  const [reason, setReason] = useState("");
+  const [reasons, setReasons] = useState<Record<string, string>>({});
 
   async function load() {
     const res = await fetch("/api/admin/verification-queue");
@@ -57,11 +57,12 @@ export default function AdminVerificationPage() {
   }, []);
 
   async function decide(workerId: string, field: VerificationField, status: "verified" | "rejected") {
-    if (!reason.trim()) {
+    const key = `${workerId}:${field}`;
+    const reason = reasons[key];
+    if (!reason?.trim()) {
       setError("Enter a reason before deciding.");
       return;
     }
-    const key = `${workerId}:${field}`;
     setBusyKey(key);
     setError(null);
     const res = await fetch(`/api/admin/verification/${workerId}/override`, {
@@ -74,7 +75,11 @@ export default function AdminVerificationPage() {
       setError("Could not record that decision.");
       return;
     }
-    setReason("");
+    setReasons((r) => {
+      const next = { ...r };
+      delete next[key];
+      return next;
+    });
     await load();
   }
 
@@ -97,15 +102,6 @@ export default function AdminVerificationPage() {
 
         {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
-        <div className="field" style={{ margin: "16px 0" }}>
-          <label>Reason (required for every decision below)</label>
-          <input
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Checked gov.uk/view-right-to-work, valid until 2028"
-          />
-        </div>
-
         {workers === null ? (
           <p className="text-muted">Loading…</p>
         ) : workers.length === 0 ? (
@@ -124,13 +120,24 @@ export default function AdminVerificationPage() {
               </div>
 
               {w.idVerificationStatus === "pending" && (
-                <div style={{ marginTop: "10px" }}>
-                  <span className="badge pending">{FIELD_LABELS.idVerificationStatus}</span>
+                <div className="verification-item">
+                  <div className="verification-item-header">
+                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{FIELD_LABELS.idVerificationStatus}</span>
+                    <span className="badge pending" style={{ marginTop: 0 }}>pending</span>
+                  </div>
                   {w.personaInquiryId && (
-                    <span className="text-muted" style={{ fontSize: "12.5px" }}>
-                      {" "}— Persona inquiry {w.personaInquiryId}
-                    </span>
+                    <p className="text-muted" style={{ fontSize: "12.5px", margin: "6px 0" }}>
+                      Persona inquiry {w.personaInquiryId}
+                    </p>
                   )}
+                  <input
+                    value={reasons[`${w.id}:idVerificationStatus`] ?? ""}
+                    onChange={(e) =>
+                      setReasons((r) => ({ ...r, [`${w.id}:idVerificationStatus`]: e.target.value }))
+                    }
+                    placeholder="Reason (required)"
+                    style={{ marginTop: "6px" }}
+                  />
                   <DecisionButtons
                     busy={busyKey === `${w.id}:idVerificationStatus`}
                     onDecide={(status) => decide(w.id, "idVerificationStatus", status)}
@@ -139,8 +146,11 @@ export default function AdminVerificationPage() {
               )}
 
               {w.rightToWorkStatus === "pending" && (
-                <div style={{ marginTop: "10px" }}>
-                  <span className="badge pending">{FIELD_LABELS.rightToWorkStatus}</span>
+                <div className="verification-item">
+                  <div className="verification-item-header">
+                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{FIELD_LABELS.rightToWorkStatus}</span>
+                    <span className="badge pending" style={{ marginTop: 0 }}>pending</span>
+                  </div>
                   {w.rightToWorkMethod === "share_code" && w.rightToWorkShareCode && (
                     <p style={{ fontSize: "12.5px", margin: "6px 0" }}>
                       Share code <strong>{w.rightToWorkShareCode}</strong>, DOB{" "}
@@ -166,6 +176,14 @@ export default function AdminVerificationPage() {
                       or scan is not sufficient evidence for this check.
                     </p>
                   )}
+                  <input
+                    value={reasons[`${w.id}:rightToWorkStatus`] ?? ""}
+                    onChange={(e) =>
+                      setReasons((r) => ({ ...r, [`${w.id}:rightToWorkStatus`]: e.target.value }))
+                    }
+                    placeholder="Reason (required)"
+                    style={{ marginTop: "6px" }}
+                  />
                   <DecisionButtons
                     busy={busyKey === `${w.id}:rightToWorkStatus`}
                     onDecide={(status) => decide(w.id, "rightToWorkStatus", status)}
@@ -174,13 +192,22 @@ export default function AdminVerificationPage() {
               )}
 
               {w.dbsStatus === "pending" && (
-                <div style={{ marginTop: "10px" }}>
-                  <span className="badge pending">{FIELD_LABELS.dbsStatus}</span>
+                <div className="verification-item">
+                  <div className="verification-item-header">
+                    <span style={{ fontWeight: 600, fontSize: "13px" }}>{FIELD_LABELS.dbsStatus}</span>
+                    <span className="badge pending" style={{ marginTop: 0 }}>pending</span>
+                  </div>
                   {w.dbsApplicationRef && (
-                    <span className="text-muted" style={{ fontSize: "12.5px" }}>
-                      {" "}— application ref {w.dbsApplicationRef}
-                    </span>
+                    <p className="text-muted" style={{ fontSize: "12.5px", margin: "6px 0" }}>
+                      Application ref {w.dbsApplicationRef}
+                    </p>
                   )}
+                  <input
+                    value={reasons[`${w.id}:dbsStatus`] ?? ""}
+                    onChange={(e) => setReasons((r) => ({ ...r, [`${w.id}:dbsStatus`]: e.target.value }))}
+                    placeholder="Reason (required)"
+                    style={{ marginTop: "6px" }}
+                  />
                   <DecisionButtons
                     busy={busyKey === `${w.id}:dbsStatus`}
                     onDecide={(status) => decide(w.id, "dbsStatus", status)}

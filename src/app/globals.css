@@ -870,6 +870,19 @@ legend {
   flex-shrink: 0;
 }
 
+/* ---------- verification queue items ---------- */
+.verification-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.verification-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 /* ---------- connect nudge ---------- */
 .connect-nudge {
   display: flex;
