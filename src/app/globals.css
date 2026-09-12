@@ -870,6 +870,100 @@ legend {
   flex-shrink: 0;
 }
 
+/* ---------- candidate search ---------- */
+.candidate-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidate-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.candidate-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.candidate-name {
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fav-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--amber-deep);
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.candidate-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tier-badge {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.tier-badge.rising {
+  background: rgba(107, 114, 102, 0.12);
+  color: var(--steel);
+}
+
+.tier-badge.reliable {
+  background: rgba(225, 154, 51, 0.16);
+  color: var(--amber-deep);
+}
+
+.tier-badge.top_rated {
+  background: rgba(63, 110, 82, 0.14);
+  color: var(--green);
+}
+
+.match-score {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  color: var(--steel);
+}
+
+.cv-link {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--amber-deep);
+  color: var(--amber-deep);
+}
+
 /* ---------- verification queue items ---------- */
 .verification-item {
   margin-top: 12px;

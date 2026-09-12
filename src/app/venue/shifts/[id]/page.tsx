@@ -76,6 +76,17 @@ const QUICK_ACTIONS: { key: string; label: string; params: Record<string, string
   { key: "kitchen", label: "🍳 Kitchen roles", params: { role: "__kitchen__", sort: "match" } },
 ];
 
+const TIER_LABEL: Record<string, string> = {
+  rising: "Rising",
+  reliable: "Reliable",
+  top_rated: "Top rated",
+};
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
 export default function VenueShiftDetailPage() {
   const params = useParams<{ id: string }>();
   const [shift, setShift] = useState<ShiftDetail | null>(null);
@@ -297,37 +308,48 @@ export default function VenueShiftDetailPage() {
               <p className="text-muted">No candidates found.</p>
             ) : (
               candidates.map((c) => (
-                <div key={c.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-                  <div style={{ fontSize: "13px", lineHeight: 1.5 }}>
-                    <button
-                      onClick={() => toggleFavourite(c.id)}
-                      title="Favourite"
-                      style={{ border: "none", background: "none", cursor: "pointer", color: "var(--amber-deep)", padding: 0, marginRight: "6px" }}
-                    >
-                      {c.isFavourite ? "★" : "☆"}
+                <div key={c.id} className="card candidate-card">
+                  <div className="candidate-top">
+                    <div className="candidate-identity">
+                      <div className="avatar">{initials(c.name)}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div className="candidate-name">
+                          {c.name}
+                          <button
+                            onClick={() => toggleFavourite(c.id)}
+                            title="Favourite"
+                            className="fav-btn"
+                          >
+                            {c.isFavourite ? "★" : "☆"}
+                          </button>
+                        </div>
+                        <div className="text-muted" style={{ fontSize: "12px" }}>
+                          {WORKER_ROLE_LABELS[c.primaryRole]} · {c.yearsExperience}y exp ·{" "}
+                          {c.shiftsCompleted} shift{c.shiftsCompleted === 1 ? "" : "s"} completed
+                        </div>
+                      </div>
+                    </div>
+                    <button className="btn primary" disabled={busy} onClick={() => handleOffer(c.id)}>
+                      Offer
                     </button>
-                    <strong>{c.name}</strong> — match {c.matchScore}, {c.yearsExperience}y exp,{" "}
-                    {c.reliabilityScore !== null
-                      ? `${c.reliabilityScore} (${c.reliabilityTier})`
-                      : c.reliabilityTier}
-                    , {c.shiftsCompleted} shifts completed
+                  </div>
+                  <div className="candidate-badges">
+                    <span className={`tier-badge ${c.reliabilityTier}`}>
+                      {c.reliabilityScore !== null ? `${c.reliabilityScore} · ` : ""}
+                      {TIER_LABEL[c.reliabilityTier] ?? c.reliabilityTier}
+                    </span>
+                    <span className="match-score">Match {c.matchScore}</span>
                     {c.isNewWorker && (
-                      <span className="text-error" style={{ marginLeft: "6px", fontSize: "12px" }}>
-                        · New — capped shift value
+                      <span className="badge pending" style={{ marginTop: 0 }}>
+                        New — capped shift value
                       </span>
                     )}
                     {c.hasCv && (
-                      <>
-                        {" "}
-                        <a href={`/api/workers/${c.id}/cv`} target="_blank" rel="noreferrer">
-                          View CV
-                        </a>
-                      </>
+                      <a href={`/api/workers/${c.id}/cv`} target="_blank" rel="noreferrer" className="cv-link">
+                        View CV
+                      </a>
                     )}
                   </div>
-                  <button className="btn primary" disabled={busy} onClick={() => handleOffer(c.id)}>
-                    Offer
-                  </button>
                 </div>
               ))
             )}
