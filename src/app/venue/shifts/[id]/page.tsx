@@ -245,6 +245,7 @@ export default function VenueShiftDetailPage() {
           links={[
             { href: "/venue/shifts", label: "All shifts" },
             { href: "/venue/disputes", label: "Disputes" },
+            { href: "/venue/billing", label: "Billing" },
           ]}
         />
         <div className="content">
@@ -260,6 +261,7 @@ export default function VenueShiftDetailPage() {
           links={[
             { href: "/venue/shifts", label: "All shifts" },
             { href: "/venue/disputes", label: "Disputes" },
+            { href: "/venue/billing", label: "Billing" },
           ]}
         />
         <div className="content">
@@ -275,6 +277,7 @@ export default function VenueShiftDetailPage() {
         links={[
           { href: "/venue/shifts", label: "All shifts" },
           { href: "/venue/disputes", label: "Disputes" },
+          { href: "/venue/billing", label: "Billing" },
         ]}
       />
       <div className="content">

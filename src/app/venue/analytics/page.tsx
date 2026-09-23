@@ -110,6 +110,7 @@ export default function VenueAnalyticsPage() {
         links={[
           { href: "/venue/shifts", label: "Your shifts" },
           { href: "/venue/disputes", label: "Disputes" },
+          { href: "/venue/billing", label: "Billing" },
         ]}
       />
       <div className="content">

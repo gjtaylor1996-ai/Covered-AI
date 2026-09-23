@@ -146,6 +146,7 @@ export default function VenueShiftsPage() {
           { href: "/", label: "Home" },
           { href: "/venue/analytics", label: "Analytics" },
           { href: "/venue/disputes", label: "Disputes" },
+          { href: "/venue/billing", label: "Billing" },
         ]}
       />
       <div className="content">
