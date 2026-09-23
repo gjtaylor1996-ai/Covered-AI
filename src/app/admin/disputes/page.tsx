@@ -67,7 +67,7 @@ export default function AdminDisputesPage() {
     <div className="page">
       <AppHeader
         links={[
-          { href: "/", label: "Home" },
+          { href: "/admin", label: "Admin" },
           { href: "/admin/verification", label: "Verification" },
           { href: "/admin/dashboard", label: "Dashboard" },
           { href: "/admin/signups", label: "Signups" },

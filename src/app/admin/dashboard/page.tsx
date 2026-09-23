@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
     <div className="page">
       <AppHeader
         links={[
-          { href: "/", label: "Home" },
+          { href: "/admin", label: "Admin" },
           { href: "/admin/verification", label: "Verification" },
           { href: "/admin/disputes", label: "Disputes" },
           { href: "/admin/signups", label: "Signups" },

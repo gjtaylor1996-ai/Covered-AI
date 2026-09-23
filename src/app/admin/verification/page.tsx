@@ -87,7 +87,7 @@ export default function AdminVerificationPage() {
     <div className="page">
       <AppHeader
         links={[
-          { href: "/", label: "Home" },
+          { href: "/admin", label: "Admin" },
           { href: "/admin/disputes", label: "Disputes" },
           { href: "/admin/dashboard", label: "Dashboard" },
           { href: "/admin/signups", label: "Signups" },
