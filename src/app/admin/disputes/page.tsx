@@ -70,6 +70,7 @@ export default function AdminDisputesPage() {
           { href: "/", label: "Home" },
           { href: "/admin/verification", label: "Verification" },
           { href: "/admin/dashboard", label: "Dashboard" },
+          { href: "/admin/signups", label: "Signups" },
         ]}
       />
       <div className="content">

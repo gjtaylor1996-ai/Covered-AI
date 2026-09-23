@@ -89,6 +89,7 @@ export default function AdminDashboardPage() {
           { href: "/", label: "Home" },
           { href: "/admin/verification", label: "Verification" },
           { href: "/admin/disputes", label: "Disputes" },
+          { href: "/admin/signups", label: "Signups" },
         ]}
       />
       <div className="content">

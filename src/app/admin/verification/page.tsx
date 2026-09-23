@@ -90,6 +90,7 @@ export default function AdminVerificationPage() {
           { href: "/", label: "Home" },
           { href: "/admin/disputes", label: "Disputes" },
           { href: "/admin/dashboard", label: "Dashboard" },
+          { href: "/admin/signups", label: "Signups" },
         ]}
       />
       <div className="content">
