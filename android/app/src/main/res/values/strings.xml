@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Covered</string>
+    <string name="title_activity_main">Covered</string>
+    <string name="package_name">com.covered.app</string>
+    <string name="custom_url_scheme">com.covered.app</string>
+</resources>
