@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { isWorkerDoubleBooked } from "@/lib/shift-time";
+import { sendPushToWorker } from "@/lib/push";
+import { WORKER_ROLE_LABELS } from "@/lib/types";
 
 const schema = z.object({
   date: z.string(), // "YYYY-MM-DD"
@@ -67,6 +69,12 @@ export async function POST(
       respondBy: new Date(Date.now() + 2 * 60 * 60 * 1000),
     },
   });
+
+  sendPushToWorker(worker.id, {
+    title: "New shift offer",
+    body: `${WORKER_ROLE_LABELS[worker.primaryRole]} · £${worker.hourlyRate}/hr · respond within 2h`,
+    url: "/worker/shifts",
+  }).catch(() => {});
 
   return NextResponse.json({ shift }, { status: 201 });
 }

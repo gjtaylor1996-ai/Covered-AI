@@ -261,11 +261,12 @@ model WorkerProfile {
   dbsApplicationRef           String?
   dbsSubmittedAt               DateTime?
 
-  certifications  Certification[]
-  shifts          Shift[]
-  favouritedBy    Favourite[]
-  hireRequests    HireRequest[]
-  cv              WorkerCv?
+  certifications    Certification[]
+  shifts            Shift[]
+  favouritedBy      Favourite[]
+  hireRequests      HireRequest[]
+  cv                WorkerCv?
+  pushSubscriptions PushSubscription[]
 
   @@map("worker_profiles")
 }
@@ -299,6 +300,23 @@ model WorkerCv {
   uploadedAt DateTime      @default(now())
 
   @@map("worker_cvs")
+}
+
+// Not in spec — web push subscription per device/browser, so a worker who
+// enables notifications on more than one device gets the shift-offer push
+// on all of them. endpoint is unique per browser/device pairing (the
+// browser's push service assigns it), so re-subscribing the same device
+// updates its row instead of creating a duplicate.
+model PushSubscription {
+  id        String        @id @default(uuid())
+  workerId  String
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  endpoint  String        @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime      @default(now())
+
+  @@map("push_subscriptions")
 }
 
 // --- Venue side (corrected multi-user model, spec §8.3) -------------------

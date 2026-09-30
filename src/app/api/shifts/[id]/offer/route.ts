@@ -7,6 +7,8 @@ import { expireIfPastDeadline } from "@/lib/shift-expiry";
 import { isWorkerDoubleBooked } from "@/lib/shift-time";
 import { computeShiftAmounts } from "@/lib/payments";
 import { getBusinessRules } from "@/config/business-rules";
+import { sendPushToWorker } from "@/lib/push";
+import { WORKER_ROLE_LABELS } from "@/lib/types";
 
 const offerSchema = z.object({ workerId: z.string().uuid() });
 
@@ -88,6 +90,15 @@ export async function POST(
       respondBy,
     },
   });
+
+  // Best-effort: the worker still has the offer waiting for them in the
+  // app either way, and a missing VAPID config (push not set up yet)
+  // shouldn't turn into a 500 on the offer itself.
+  sendPushToWorker(worker.id, {
+    title: "New shift offer",
+    body: `${WORKER_ROLE_LABELS[shift.role]} · £${shift.hourlyRate}/hr · respond within ${RESPOND_WINDOW_HOURS}h`,
+    url: "/worker/shifts",
+  }).catch(() => {});
 
   return NextResponse.json({ shift: updated });
 }

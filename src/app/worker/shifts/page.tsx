@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { WORKER_ROLE_LABELS, type WeeklyAvailability, type WorkerRoleKey } from "@/lib/types";
 import { VerificationPanel } from "../verification-panel";
 import { HireRequestsPanel } from "../hire-requests-panel";
+import { PushNotificationsToggle } from "../push-notifications-toggle";
 import { OnboardingWizard } from "../onboarding-wizard";
 import { formatTime12h } from "@/components/TimeInput";
 import { AppHeader } from "@/components/AppHeader";
@@ -269,6 +270,8 @@ export default function WorkerShiftsPage() {
             </button>
           </div>
         )}
+
+        <PushNotificationsToggle />
 
         {error && <p className="mono text-error" style={{ fontSize: "12.5px" }}>{error}</p>}
 
