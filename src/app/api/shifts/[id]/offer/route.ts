@@ -8,6 +8,7 @@ import { isWorkerDoubleBooked } from "@/lib/shift-time";
 import { computeShiftAmounts } from "@/lib/payments";
 import { getBusinessRules } from "@/config/business-rules";
 import { sendPushToWorker } from "@/lib/push";
+import { isFullyVerified } from "@/lib/verification";
 import { WORKER_ROLE_LABELS } from "@/lib/types";
 
 const offerSchema = z.object({ workerId: z.string().uuid() });
@@ -50,6 +51,12 @@ export async function POST(
   });
   if (!worker) {
     return NextResponse.json({ error: "worker_not_found" }, { status: 404 });
+  }
+
+  // Search already hides unverified workers; this stops an offer reaching
+  // one by id (spec §8.6).
+  if (!isFullyVerified(worker)) {
+    return NextResponse.json({ error: "worker_not_verified" }, { status: 422 });
   }
 
   // Double-booking guard, spec §8.7: reject an offer that overlaps a

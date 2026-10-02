@@ -4,6 +4,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
 import { getBusinessRules } from "@/config/business-rules";
 import { computeMatchScore, KITCHEN_ROLES, KITCHEN_ROLE_GROUP } from "@/lib/matching";
+import { verifiedWorkerWhere } from "@/lib/verification";
 import type { WeeklyAvailability, WorkerRoleKey } from "@/lib/types";
 
 // Spec §4: role, maxDistance, minExperience, minReliability, sort.
@@ -57,15 +58,9 @@ export async function GET(request: NextRequest) {
       // discoverable, even though they aren't rejected on any single
       // verification check.
       user: { suspendedAt: null },
-      // A rejected right-to-work or ID check blocks a worker from every
-      // search result, full stop — spec §8.6. A rejected DBS only
-      // blocks roles that actually require one, not the whole profile.
-      rightToWorkStatus: { not: "rejected" },
-      idVerificationStatus: { not: "rejected" },
-      NOT: {
-        dbsStatus: "rejected",
-        primaryRole: { in: getBusinessRules().verification.requiresDbsRoles },
-      },
+      // Only workers with approved ID and right-to-work checks are
+      // discoverable (plus DBS, for roles that require it) — spec §8.6.
+      ...verifiedWorkerWhere(),
       // Spec §3.3: accepting a hire request removes the worker from
       // that venue's active casual search results — they're a direct
       // employee there now — while leaving their profile intact for

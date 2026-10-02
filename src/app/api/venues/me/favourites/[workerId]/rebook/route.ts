@@ -5,6 +5,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { isWorkerDoubleBooked } from "@/lib/shift-time";
 import { sendPushToWorker } from "@/lib/push";
+import { isFullyVerified } from "@/lib/verification";
 import { WORKER_ROLE_LABELS } from "@/lib/types";
 
 const schema = z.object({
@@ -46,6 +47,10 @@ export async function POST(
   const worker = await db.workerProfile.findUnique({ where: { id: params.workerId } });
   if (!isFavourite || !worker) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
+  if (!isFullyVerified(worker)) {
+    return NextResponse.json({ error: "worker_not_verified" }, { status: 422 });
   }
 
   const { date, startTime, endTime } = parsed.data;

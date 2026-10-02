@@ -248,8 +248,10 @@ model WorkerProfile {
   personaInquiryId             String?   @unique
   idVerificationSubmittedAt   DateTime?
   rightToWorkMethod           RightToWorkMethod?
+  // The four rightToWork* fields below hold AES-256-GCM ciphertext
+  // (src/lib/field-encryption.ts). Dob is an encrypted YYYY-MM-DD string.
   rightToWorkShareCode        String?   // share_code method only
-  rightToWorkDob               DateTime?
+  rightToWorkDob               String?
   // manual_document method only — British/Irish citizens. Recorded so
   // an admin knows who to physically check a passport against; the
   // check itself is an in-person, out-of-band action this field can't

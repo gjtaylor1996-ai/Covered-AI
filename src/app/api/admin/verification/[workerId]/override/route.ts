@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getAdminUser, writeAuditLog } from "@/lib/permissions";
+import { withoutRightToWorkData } from "@/lib/verification";
 
 const schema = z.object({
   field: z.enum(["rightToWorkStatus", "idVerificationStatus", "dbsStatus"]),
@@ -50,5 +51,5 @@ export async function POST(
     metadata: { field, status },
   });
 
-  return NextResponse.json({ worker: updated });
+  return NextResponse.json({ worker: withoutRightToWorkData(updated) });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getAdminUser } from "@/lib/permissions";
+import { decryptNullable } from "@/lib/field-encryption";
 
 /** Items needing manual review — spec §8.2. */
 export async function GET(request: NextRequest) {
@@ -43,5 +44,13 @@ export async function GET(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  return NextResponse.json({ workers });
+  return NextResponse.json({
+    workers: workers.map((w) => ({
+      ...w,
+      rightToWorkShareCode: decryptNullable(w.rightToWorkShareCode),
+      rightToWorkDob: decryptNullable(w.rightToWorkDob),
+      rightToWorkNationality: decryptNullable(w.rightToWorkNationality),
+      rightToWorkPassportNumber: decryptNullable(w.rightToWorkPassportNumber),
+    })),
+  });
 }

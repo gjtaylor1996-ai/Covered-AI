@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getWorkerProfile } from "@/lib/permissions";
+import { withoutRightToWorkData } from "@/lib/verification";
 
 const schema = z.object({
   applicationRef: z.string().min(1),
@@ -43,5 +44,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ worker: updated });
+  return NextResponse.json({ worker: withoutRightToWorkData(updated) });
 }

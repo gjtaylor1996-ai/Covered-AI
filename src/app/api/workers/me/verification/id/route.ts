@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getWorkerProfile } from "@/lib/permissions";
-import { isWithinResubmissionCooldown } from "@/lib/verification";
+import { isWithinResubmissionCooldown, withoutRightToWorkData } from "@/lib/verification";
 import { createInquiry, generateOneTimeLink } from "@/lib/persona";
 import { getAppUrl } from "@/lib/stripe";
 
@@ -65,5 +65,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ worker: updated, url: oneTimeLink });
+  return NextResponse.json({ worker: withoutRightToWorkData(updated), url: oneTimeLink });
 }

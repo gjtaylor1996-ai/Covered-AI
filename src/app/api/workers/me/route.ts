@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getWorkerProfile } from "@/lib/permissions";
-import { roleRequiresDbs } from "@/lib/verification";
+import { roleRequiresDbs, withoutRightToWorkData } from "@/lib/verification";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 
 const WORKER_ROLE_KEYS = Object.keys(WORKER_ROLE_LABELS) as [
@@ -25,7 +25,9 @@ export async function GET(request: NextRequest) {
     where: { workerId: worker.id },
     select: { fileName: true },
   });
-  return NextResponse.json({ worker: { ...worker, cvFileName: cv?.fileName ?? null } });
+  return NextResponse.json({
+    worker: { ...withoutRightToWorkData(worker), cvFileName: cv?.fileName ?? null },
+  });
 }
 
 const dayAvailabilitySchema = z.object({
@@ -86,5 +88,5 @@ export async function PATCH(request: NextRequest) {
   }
 
   const updated = await db.workerProfile.update({ where: { id: worker.id }, data });
-  return NextResponse.json({ worker: updated });
+  return NextResponse.json({ worker: withoutRightToWorkData(updated) });
 }

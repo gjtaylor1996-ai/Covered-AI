@@ -3,7 +3,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getWorkerProfile } from "@/lib/permissions";
-import { isWithinResubmissionCooldown } from "@/lib/verification";
+import { isWithinResubmissionCooldown, withoutRightToWorkData } from "@/lib/verification";
+import { encryptField } from "@/lib/field-encryption";
 
 const shareCodeSchema = z.object({
   method: z.literal("share_code"),
@@ -60,9 +61,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
+  const dob = new Date(parsed.data.dateOfBirth);
+  if (Number.isNaN(dob.getTime())) {
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+  }
+  const encryptedDob = encryptField(dob.toISOString().slice(0, 10));
+
   const base = {
     rightToWorkStatus: "pending" as const,
     rightToWorkSubmittedAt: new Date(),
+    rightToWorkDob: encryptedDob,
   };
 
   const data =
@@ -70,21 +78,19 @@ export async function POST(request: NextRequest) {
       ? {
           ...base,
           rightToWorkMethod: "share_code" as const,
-          rightToWorkShareCode: parsed.data.shareCode.toUpperCase(),
-          rightToWorkDob: new Date(parsed.data.dateOfBirth),
+          rightToWorkShareCode: encryptField(parsed.data.shareCode.toUpperCase()),
           rightToWorkNationality: null,
           rightToWorkPassportNumber: null,
         }
       : {
           ...base,
           rightToWorkMethod: "manual_document" as const,
-          rightToWorkNationality: parsed.data.nationality,
-          rightToWorkPassportNumber: parsed.data.passportNumber,
-          rightToWorkDob: new Date(parsed.data.dateOfBirth),
+          rightToWorkNationality: encryptField(parsed.data.nationality),
+          rightToWorkPassportNumber: encryptField(parsed.data.passportNumber),
           rightToWorkShareCode: null,
         };
 
   const updated = await db.workerProfile.update({ where: { id: worker.id }, data });
 
-  return NextResponse.json({ worker: updated });
+  return NextResponse.json({ worker: withoutRightToWorkData(updated) });
 }
