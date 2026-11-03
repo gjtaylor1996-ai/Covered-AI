@@ -66,6 +66,20 @@ export function HomeMarketingPanel() {
               </div>
             ))}
           </div>
+
+          <video
+            key={audience}
+            className="home-video"
+            src={`/videos/covered-for-${audience === "worker" ? "workers" : "venues"}.mp4`}
+            poster={`/videos/covered-for-${audience === "worker" ? "workers" : "venues"}-poster.jpg`}
+            controls
+            muted
+            loop
+            autoPlay
+            playsInline
+            preload="metadata"
+            aria-label={audience === "worker" ? "Covered for workers: short intro video" : "Covered for venues: short intro video"}
+          />
         </div>
 
         <div className="auth-brand-foot">Covered · Hospitality staffing</div>

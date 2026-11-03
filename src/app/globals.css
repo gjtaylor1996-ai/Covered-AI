@@ -486,7 +486,18 @@ input[type="radio"] {
 .auth-brand-mid {
   position: relative;
   z-index: 1;
-  max-width: 420px;
+  max-width: 460px;
+}
+
+.home-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-top: 28px;
+  border-radius: 12px;
+  border: 1px solid var(--ink-soft);
+  background: var(--ink);
+  object-fit: cover;
 }
 
 .role-pill-row {

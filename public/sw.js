@@ -12,6 +12,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  // Let the browser stream video itself — proxying range requests through
+  // the worker breaks playback in Safari.
+  if (event.request.destination === "video" || new URL(event.request.url).pathname.startsWith("/videos/")) {
+    return;
+  }
   event.respondWith(fetch(event.request));
 });
 
