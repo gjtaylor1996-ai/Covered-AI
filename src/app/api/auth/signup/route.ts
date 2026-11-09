@@ -7,6 +7,7 @@ import {
   SESSION_COOKIE_MAX_AGE,
   SESSION_COOKIE_NAME,
 } from "@/lib/auth";
+import { scheduleVenueSync } from "@/lib/hubspot";
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
   const passwordHash = await hashPassword(password);
 
   const user = await db.user.create({
+    include: { venueMemberships: { select: { venueId: true } } },
     data: {
       email,
       passwordHash,
@@ -81,6 +83,9 @@ export async function POST(request: NextRequest) {
           }),
     },
   });
+
+  const newVenueId = user.venueMemberships[0]?.venueId;
+  if (newVenueId) scheduleVenueSync(newVenueId);
 
   const token = await createSessionToken({ userId: user.id, role: user.role });
   const response = NextResponse.json({

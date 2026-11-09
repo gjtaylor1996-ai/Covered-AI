@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
+import { scheduleVenueSync } from "@/lib/hubspot";
 
 /** Marks the onboarding wizard done — every step is individually skippable. */
 export async function POST(request: NextRequest) {
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
       where: { id: membership.venueId },
       data: { onboardingCompletedAt: new Date() },
     });
+    scheduleVenueSync(membership.venueId);
   }
 
   return NextResponse.json({ ok: true });

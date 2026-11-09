@@ -5,6 +5,7 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership } from "@/lib/permissions";
 import { recalculateReliabilityScore } from "@/lib/scoring";
 import { attemptShiftPayment } from "@/lib/payments";
+import { scheduleVenueSync } from "@/lib/hubspot";
 
 const completeSchema = z.object({
   confirmedAttendance: z.boolean(),
@@ -74,6 +75,8 @@ export async function POST(
   // charge the venue. attemptShiftPayment never throws (see its own
   // comment) so this can't take down shift completion.
   const payment = confirmedAttendance ? await attemptShiftPayment(shift.id) : null;
+
+  if (confirmedAttendance) scheduleVenueSync(shift.venueId);
 
   return NextResponse.json({ shift: updatedShift, feedback, payment });
 }

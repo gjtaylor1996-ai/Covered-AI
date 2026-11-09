@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { getVenueMembership } from "@/lib/permissions";
 import { getStripe, getAppUrl } from "@/lib/stripe";
+import { scheduleVenueSync } from "@/lib/hubspot";
 
 /**
  * Starts a Stripe Checkout session (mode: setup) so a venue can save a
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
     });
     customerId = customer.id;
     await db.venue.update({ where: { id: membership.venueId }, data: { stripeCustomerId: customerId } });
+    scheduleVenueSync(membership.venueId);
   }
 
   const checkoutSession = await stripe.checkout.sessions.create({

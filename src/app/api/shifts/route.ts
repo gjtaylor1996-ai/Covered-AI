@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getSessionFromRequest } from "@/lib/auth";
 import { canPostShifts, getVenueMembership, getWorkerProfile } from "@/lib/permissions";
+import { scheduleVenueSync } from "@/lib/hubspot";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 
 const WORKER_ROLE_KEYS = Object.keys(WORKER_ROLE_LABELS) as [
@@ -111,6 +112,8 @@ export async function POST(request: NextRequest) {
       status: "open",
     },
   });
+
+  scheduleVenueSync(membership.venueId);
 
   return NextResponse.json({ shift }, { status: 201 });
 }
