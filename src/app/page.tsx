@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 import { LogoutButton } from "./logout-button";
 import { HomeMarketingPanel } from "./home-marketing-panel";
+import { BrandMark } from "@/components/BrandMark";
 
 function dashboardPath(role: string): string {
   if (role === "venue_admin") return "/venue/shifts";
@@ -31,7 +32,7 @@ export default async function HomePage() {
   return (
     <div className="auth-shell">
       <div className="card-dark" style={{ maxWidth: "380px", width: "100%", textAlign: "center", padding: "32px 28px", marginBottom: 0 }}>
-        <div className="brand-mark" style={{ margin: "0 auto 16px" }}>Co</div>
+        <BrandMark style={{ margin: "0 auto 16px" }} />
         <h1 style={{ fontSize: "22px", margin: "0 0 6px", color: "var(--paper-light)" }}>Welcome back</h1>
         <p style={{ fontSize: "13px", color: "var(--steel-light)", margin: "0 0 26px", lineHeight: 1.5 }}>
           Signed in as <strong style={{ color: "var(--paper-light)" }}>{user.email}</strong>

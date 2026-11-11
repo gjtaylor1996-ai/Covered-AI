@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 
 type AudienceKey = "worker" | "venue";
 
@@ -34,7 +35,7 @@ export function HomeMarketingPanel() {
     <div className="auth-split">
       <div className="auth-brand-panel">
         <div className="auth-brand-top">
-          <div className="brand-mark">Co</div>
+          <BrandMark />
           <span>Covered</span>
         </div>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
 import { TimeInput } from "@/components/TimeInput";
+import { BrandMark } from "@/components/BrandMark";
 
 interface VenueSummary {
   name: string;
@@ -102,7 +103,7 @@ export function OnboardingWizard({
         <div className="wizard-topbar">
           <div className="wizard-topbar-row">
             <div className="wizard-brand">
-              <div className="brand-mark">Co</div>
+              <BrandMark />
               <span>Covered</span>
             </div>
             <div className="wizard-step-label">{Math.min(step, TOTAL_STEPS)} / {TOTAL_STEPS}</div>

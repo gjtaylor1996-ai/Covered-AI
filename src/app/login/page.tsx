@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 
 type AudienceKey = "worker" | "venue";
 
@@ -66,7 +67,7 @@ export default function LoginPage() {
     <div className="auth-split">
       <div className="auth-brand-panel">
         <div className="auth-brand-top">
-          <div className="brand-mark">Co</div>
+          <BrandMark />
           <span>Covered</span>
         </div>
 
