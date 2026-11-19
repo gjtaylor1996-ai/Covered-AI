@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
   }
   // Until email is set up there is nothing to send. Say so honestly (this
   // reveals nothing about any account) instead of pretending an email went out.
-  if (!isEmailConfigured()) {
+  // EMAIL_FROM must be set too: without a verified sender on your own domain,
+  // Resend only delivers to its own account owner, so a reset email to anyone
+  // else would silently never arrive.
+  if (!isEmailConfigured() || !process.env.EMAIL_FROM) {
     return NextResponse.json({ error: "email_not_configured" }, { status: 503 });
   }
 
