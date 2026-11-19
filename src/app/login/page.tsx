@@ -137,6 +137,9 @@ export default function LoginPage() {
             <button type="submit" className="btn primary" disabled={submitting} style={{ width: "100%" }}>
               {submitting ? "Logging in…" : "Log in"}
             </button>
+            <p className="auth-foot-line" style={{ marginTop: "12px" }}>
+              <Link href="/forgot-password">Forgot your password?</Link>
+            </p>
           </form>
 
           <p className="auth-foot-line">
