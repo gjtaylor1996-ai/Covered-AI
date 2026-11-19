@@ -42,6 +42,17 @@ const PROPERTIES = [
   { name: "covered_rank", label: "Outreach rank", type: "number", fieldType: "number" },
   { name: "covered_fit_tier", label: "Outreach fit tier", type: "string", fieldType: "text" },
   { name: "covered_venue_type", label: "Venue type", type: "string", fieldType: "text" },
+  { name: "covered_cuisine", label: "Cuisine or style", type: "string", fieldType: "text" },
+  {
+    name: "covered_venue_category",
+    label: "Venue category",
+    type: "enumeration",
+    fieldType: "select",
+    options: [
+      "Traditional pub", "Gastropub", "Brewery or taproom", "Cocktail bar", "Wine bar", "Craft beer bar",
+      "Rooftop or late-night bar", "Sports or entertainment bar", "Other bar", "Restaurant", "Cafe",
+    ].map((value, i) => ({ value, label: value, displayOrder: i })),
+  },
   { name: "covered_area", label: "London area", type: "string", fieldType: "text" },
   { name: "covered_first_line", label: "Outreach first line", type: "string", fieldType: "textarea" },
 ];

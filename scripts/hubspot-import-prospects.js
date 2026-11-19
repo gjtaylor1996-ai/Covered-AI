@@ -105,6 +105,9 @@ async function main() {
   // counts as independent, kept on the company's description.
   const basisIdx = col("Independence basis");
   const confIdx = col("Independence confidence");
+  // Optional: finer "Venue category" (a dropdown value) and free-text cuisine.
+  const categoryIdx = col("Venue category");
+  const cuisineIdx = col("Cuisine");
 
   let created = 0;
   let updated = 0;
@@ -120,6 +123,8 @@ async function main() {
       covered_rank: Number(r[idx.rank]) || undefined,
       covered_fit_tier: r[idx.tier].trim() || undefined,
       covered_venue_type: r[idx.type].trim() || undefined,
+      covered_venue_category: (categoryIdx !== -1 && r[categoryIdx].trim()) || undefined,
+      covered_cuisine: (cuisineIdx !== -1 && r[cuisineIdx].trim()) || undefined,
       covered_area: r[idx.area].trim() || undefined,
       covered_first_line: r[idx.firstLine].trim() || undefined,
       domain: domainOf(r[idx.website].trim()) || undefined,
