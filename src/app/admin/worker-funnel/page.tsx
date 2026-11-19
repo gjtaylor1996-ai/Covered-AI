@@ -43,6 +43,20 @@ function Progress({ value, target }: { value: number; target: number }) {
 export default function WorkerFunnelPage() {
   const [data, setData] = useState<Funnel | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState<string | null>(null);
+
+  async function sendSummaryNow() {
+    setSending(true);
+    setSendMsg(null);
+    const res = await fetch("/api/admin/worker-funnel/send-summary", { method: "POST" });
+    const body = await res.json().catch(() => ({}));
+    setSending(false);
+    if (res.ok) setSendMsg(`Sent to ${body.to}. Check your inbox (and spam).`);
+    else if (body.error === "email_not_configured")
+      setSendMsg("Email is not set up yet: add RESEND_API_KEY (and the other weekly summary settings) first.");
+    else setSendMsg(`Could not send: ${body.error ?? "unknown error"}.`);
+  }
 
   useEffect(() => {
     fetch("/api/admin/worker-funnel")
@@ -196,6 +210,18 @@ export default function WorkerFunnelPage() {
             <p className="text-muted" style={{ fontSize: "12px", marginTop: "14px" }}>
               Current as of {new Date(data.asOf).toLocaleString("en-GB")}.
             </p>
+
+            <div className="section-title">Weekly summary email</div>
+            <div className="card">
+              <p style={{ margin: "0 0 10px", fontSize: "13.5px" }}>
+                A summary of these numbers is emailed every Monday at 08:00 UTC, once email is set up (see the weekly
+                summary settings). You can send one to yourself now to see what it looks like.
+              </p>
+              <button className="btn ghost" onClick={sendSummaryNow} disabled={sending}>
+                {sending ? "Sending…" : "Email me this summary now"}
+              </button>
+              {sendMsg && <p className="mono" style={{ fontSize: "12.5px", marginTop: "10px" }}>{sendMsg}</p>}
+            </div>
           </>
         )}
       </div>
