@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { WORKER_ROLE_LABELS, type WorkerRoleKey } from "@/lib/types";
+import { WORKER_SOURCE_LABELS } from "@/lib/worker-sources";
 
 interface WorkerRow {
   id: string;
   name: string;
   email: string;
   role: WorkerRoleKey | null;
+  source: string | null;
   createdAt: string;
   onboarded: boolean;
   verified: boolean;
@@ -130,11 +132,12 @@ export default function AdminSignupsPage() {
                 onClick={() =>
                   downloadCsv(
                     "worker-signups.csv",
-                    ["Name", "Email", "Role", "Signed up", "Onboarded", "Verified", "Payout connected"],
+                    ["Name", "Email", "Role", "Source", "Signed up", "Onboarded", "Verified", "Payout connected"],
                     sortedWorkers.map((w) => [
                       w.name,
                       w.email,
                       w.role ? WORKER_ROLE_LABELS[w.role] : "",
+                      w.source ? WORKER_SOURCE_LABELS[w.source] ?? w.source : "",
                       new Date(w.createdAt).toISOString().slice(0, 10),
                       w.onboarded ? "yes" : "no",
                       w.verified ? "yes" : "no",
@@ -162,6 +165,9 @@ export default function AdminSignupsPage() {
                       <th style={{ cursor: "pointer" }} onClick={() => toggleWorkerSort("role")}>
                         Role{sortArrow(workerSortKey === "role", workerSortDir)}
                       </th>
+                      <th style={{ cursor: "pointer" }} onClick={() => toggleWorkerSort("source")}>
+                        Source{sortArrow(workerSortKey === "source", workerSortDir)}
+                      </th>
                       <th style={{ cursor: "pointer" }} onClick={() => toggleWorkerSort("createdAt")}>
                         Signed up{sortArrow(workerSortKey === "createdAt", workerSortDir)}
                       </th>
@@ -182,6 +188,7 @@ export default function AdminSignupsPage() {
                         <td>{w.name}</td>
                         <td>{w.email}</td>
                         <td>{w.role ? WORKER_ROLE_LABELS[w.role] : "—"}</td>
+                        <td>{w.source ? WORKER_SOURCE_LABELS[w.source] ?? w.source : "—"}</td>
                         <td>{new Date(w.createdAt).toLocaleDateString("en-GB")}</td>
                         <td>{statusBadge(w.onboarded)}</td>
                         <td>{statusBadge(w.verified)}</td>

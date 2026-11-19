@@ -48,6 +48,22 @@ export function getBusinessRules() {
       extendedHireWeeks: envInt("EXTENDED_HIRE_WEEKS", 8),
     },
 
+    // Worker outreach targets shown on the admin Worker funnel page (see the
+    // worker outreach plan): [before first venue goes live, end of week 4,
+    // end of week 8]. Proposed numbers, not benchmarks, so env-overridable.
+    workerTargets: {
+      signedUp: [
+        envInt("WORKER_TARGET_SIGNED_UP_1", 25),
+        envInt("WORKER_TARGET_SIGNED_UP_2", 50),
+        envInt("WORKER_TARGET_SIGNED_UP_3", 100),
+      ],
+      approved: [
+        envInt("WORKER_TARGET_APPROVED_1", 15),
+        envInt("WORKER_TARGET_APPROVED_2", 35),
+        envInt("WORKER_TARGET_APPROVED_3", 70),
+      ],
+    },
+
     // Reliability score cold-start threshold, scoring model doc §4. Also
     // doubles as the "new worker" cutoff below — a worker with no score
     // yet is exactly the worker a venue has no behavioural signal on.

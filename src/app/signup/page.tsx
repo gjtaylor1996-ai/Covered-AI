@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
+import { WORKER_SOURCES, isWorkerSource } from "@/lib/worker-sources";
 
 type Role = "worker" | "venue_admin";
 
@@ -41,8 +42,15 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("worker");
+  const [source, setSource] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // A link such as /signup?src=college preselects the answer.
+  useEffect(() => {
+    const src = new URLSearchParams(window.location.search).get("src");
+    if (isWorkerSource(src)) setSource(src);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +59,13 @@ export default function SignupPage() {
     const res = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, role }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role,
+        ...(role === "worker" && source ? { referralSource: source } : {}),
+      }),
     });
     setSubmitting(false);
     if (!res.ok) {
@@ -143,6 +157,19 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            {role === "worker" && (
+              <div className="field">
+                <label>How did you hear about Covered? (optional)</label>
+                <select value={source} onChange={(e) => setSource(e.target.value)}>
+                  <option value="">Choose one</option>
+                  {WORKER_SOURCES.map((s) => (
+                    <option key={s.key} value={s.key}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {error && (
               <div className="error-box">
                 <span className="error-icon">⚠</span>

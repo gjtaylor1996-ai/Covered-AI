@@ -233,6 +233,11 @@ model WorkerProfile {
   // skippable). Mirrors Venue.onboardingCompletedAt.
   onboardingCompletedAt DateTime?
 
+  // How the worker says they heard about Covered (one of the keys in
+  // src/lib/worker-sources.ts), asked at signup. Admin-only; used to see
+  // which outreach routes bring workers in. Never shown to venues.
+  referralSource String?
+
   // Not in spec §1 — Phase 4 (§8.1) needs somewhere to keep the
   // provider-specific state and submission timestamps behind the three
   // VerificationStatus fields above. idVerification goes through Persona

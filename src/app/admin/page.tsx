@@ -22,6 +22,11 @@ const SECTIONS = [
     title: "Signups",
     description: "Every worker and venue signup — sortable, exportable to CSV.",
   },
+  {
+    href: "/admin/worker-funnel",
+    title: "Worker funnel",
+    description: "Workers signed up, approved and working, against the outreach plan, and where they came from.",
+  },
 ];
 
 export default function AdminHomePage() {

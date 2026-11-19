@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
           select: {
             name: true,
             primaryRole: true,
+            referralSource: true,
             onboardingCompletedAt: true,
             idVerificationStatus: true,
             rightToWorkStatus: true,
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
     name: u.workerProfile?.name ?? "—",
     email: u.email,
     role: u.workerProfile?.primaryRole ?? null,
+    source: u.workerProfile?.referralSource ?? null,
     createdAt: u.createdAt,
     onboarded: Boolean(u.workerProfile?.onboardingCompletedAt),
     verified:

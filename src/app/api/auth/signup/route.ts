@@ -8,8 +8,12 @@ import {
   SESSION_COOKIE_NAME,
 } from "@/lib/auth";
 import { scheduleVenueSync } from "@/lib/hubspot";
+import { isWorkerSource } from "@/lib/worker-sources";
 
 const signupSchema = z.object({
+  // Optional "how did you hear about us" answer, workers only. Anything that
+  // is not one of the known keys is ignored rather than rejected.
+  referralSource: z.string().max(40).optional(),
   email: z.string().email(),
   password: z.string().min(8),
   role: z.enum(["worker", "venue_admin"]),
@@ -28,6 +32,9 @@ export async function POST(request: NextRequest) {
     );
   }
   const { email, password, role, name } = parsed.data;
+  const referralSource = isWorkerSource(parsed.data.referralSource)
+    ? parsed.data.referralSource
+    : undefined;
 
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
@@ -50,6 +57,7 @@ export async function POST(request: NextRequest) {
             workerProfile: {
               create: {
                 name,
+                referralSource,
                 primaryRole: "Bartender",
                 yearsExperience: 0,
                 hourlyRate: 0,
