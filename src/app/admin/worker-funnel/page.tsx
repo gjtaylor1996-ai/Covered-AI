@@ -112,7 +112,7 @@ export default function WorkerFunnelPage() {
                 </tbody>
               </table>
               <p className="text-muted" style={{ fontSize: "12px", margin: "10px 0 0" }}>
-                Targets are proposals from the outreach plan. They can be changed in the app's settings without a redeploy.
+                Targets are proposals from the outreach plan. They can be changed in the app settings without a redeploy.
               </p>
             </div>
 
